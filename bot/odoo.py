@@ -3,6 +3,7 @@
 import logging
 import xmlrpc.client
 from dataclasses import dataclass
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +100,19 @@ class OdooClient:
     def get_fields(self, model: str) -> dict:
         fields = self._execute(model, "fields_get", [], {"attributes": ["string", "type", "required", "readonly"]})
         return {"model": model, "fields": fields}
+
+    def get_events_between(self, start_at: datetime, end_at: datetime) -> dict:
+        start_str = start_at.strftime("%Y-%m-%d %H:%M:%S")
+        end_str = end_at.strftime("%Y-%m-%d %H:%M:%S")
+        domain = [
+            ("start", ">=", start_str),
+            ("start", "<=", end_str),
+        ]
+        fields = ["id", "name", "description", "start", "stop", "display_name"]
+        records = self._execute(
+            "calendar.event",
+            "search_read",
+            [domain],
+            {"fields": fields, "limit": _MAX_LIMIT, "order": "start asc"},
+        )
+        return {"records": records, "count": len(records), "start": start_str, "end": end_str}
