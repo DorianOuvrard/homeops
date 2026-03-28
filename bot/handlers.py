@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 from telegram import Update
+from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from bot.config import BotConfig
@@ -22,8 +23,13 @@ _RATE_LIMITED_MSG = (
 )
 
 
+async def _send_typing(update: Update) -> None:
+    await update.message.chat.send_action(ChatAction.TYPING)  # type: ignore[union-attr]
+
+
 async def _reply(update: Update, reply: str, config: BotConfig) -> None:
     """Send reply as voice + text caption. Falls back to text-only if TTS fails."""
+    await update.message.chat.send_action(ChatAction.RECORD_VOICE)  # type: ignore[union-attr]
     audio = await text_to_speech(reply, config)
     if audio:
         await update.message.reply_voice(voice=io.BytesIO(audio), caption=reply[:1024])  # type: ignore[union-attr]
@@ -88,6 +94,7 @@ async def text_handler(
         await update.message.reply_text(_RATE_LIMITED_MSG)  # type: ignore[union-attr]
         return
 
+    await _send_typing(update)
     user_text = update.message.text or ""  # type: ignore[union-attr]
     logger.info("Text from user %d: %.80s", user_id, user_text)
 
@@ -113,6 +120,7 @@ async def voice_handler(
         await update.message.reply_text(_RATE_LIMITED_MSG)  # type: ignore[union-attr]
         return
 
+    await _send_typing(update)
     logger.info("Voice message from user %d", user_id)
     voice = update.message.voice  # type: ignore[union-attr]
     file = await voice.get_file()
@@ -155,6 +163,7 @@ async def photo_handler(
         await update.message.reply_text(_RATE_LIMITED_MSG)  # type: ignore[union-attr]
         return
 
+    await _send_typing(update)
     logger.info("Photo from user %d", user_id)
     caption = update.message.caption or ""  # type: ignore[union-attr]
     photo = update.message.photo[-1]  # type: ignore[union-attr]
@@ -186,6 +195,7 @@ async def video_handler(
         await update.message.reply_text(_RATE_LIMITED_MSG)  # type: ignore[union-attr]
         return
 
+    await _send_typing(update)
     logger.info("Video from user %d", user_id)
     caption = update.message.caption or ""  # type: ignore[union-attr]
     video = update.message.video  # type: ignore[union-attr]
@@ -223,6 +233,7 @@ async def video_note_handler(
         await update.message.reply_text(_RATE_LIMITED_MSG)  # type: ignore[union-attr]
         return
 
+    await _send_typing(update)
     logger.info("Video note from user %d", user_id)
     video_note = update.message.video_note  # type: ignore[union-attr]
     file = await video_note.get_file()

@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -30,14 +31,28 @@ def _mp3_to_ogg_opus(mp3_data: bytes) -> bytes | None:
         return ogg_path.read_bytes()
 
 
+def _clean_for_speech(text: str) -> str:
+    """Strip URLs and markdown that sound awkward when read aloud."""
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"[*_`#\[\]]", "", text)  # markdown formatting
+    text = re.sub(r"\(\s*\)", "", text)  # empty parens left after URL removal
+    text = re.sub(r"  +", " ", text)
+    text = re.sub(r" *\n{2,}", "\n", text)
+    return text.strip()
+
+
 async def text_to_speech(text: str, config: BotConfig) -> bytes | None:
     """Convert text to speech via ElevenLabs. Returns OGG/OPUS bytes or None on failure."""
     if not config.elevenlabs_api_key:
         return None
 
+    speech_text = _clean_for_speech(text)
+    if not speech_text:
+        return None
+
     url = f"{_ELEVENLABS_TTS_URL}/{config.elevenlabs_voice_id}"
     headers = {"xi-api-key": config.elevenlabs_api_key, "Content-Type": "application/json"}
-    payload = {"text": text, "model_id": "eleven_multilingual_v2"}
+    payload = {"text": speech_text, "model_id": "eleven_multilingual_v2"}
 
     async with httpx.AsyncClient() as client:
         try:
