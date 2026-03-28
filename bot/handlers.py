@@ -3,6 +3,7 @@ import io
 import logging
 import subprocess
 import tempfile
+import xmlrpc.client
 from pathlib import Path
 
 from telegram import Update
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 _RATE_LIMITED_MSG = (
     "You're sending messages too fast. Please wait a moment before trying again."
 )
+_CALENDAR_TRIGGER = "calendar send"
 
 
 async def _send_typing(update: Update) -> None:
@@ -97,6 +99,49 @@ async def text_handler(
     await _send_typing(update)
     user_text = update.message.text or ""  # type: ignore[union-attr]
     logger.info("Text from user %d: %.80s", user_id, user_text)
+
+    if user_text.strip().lower() == _CALENDAR_TRIGGER:
+        try:
+            event = odoo.create_record(
+                "calendar.event",
+                {
+                    "name": "HomeOps Telegram test",
+                    "start": "2026-03-24 13:00:00",
+                    "stop": "2026-03-24 14:00:00",
+                    "allday": False,
+                },
+            )
+            reply = (
+                "Evenement ajoute au calendrier Odoo pour le 24 mars 2026 a 13h. "
+                f"Reference: {event['record']['display_name'] or event['record']['id']}."
+            )
+        except xmlrpc.client.Fault as exc:
+            logger.exception("Odoo calendar event creation failed")
+            fault = exc.faultString or str(exc)
+            if 'database "' in fault and '" does not exist' in fault:
+                reply = (
+                    f"Impossible de creer l'evenement: la base Odoo configuree "
+                    f"({config.odoo_db}) n'existe pas."
+                )
+            elif "AccessError" in fault or "access" in fault.lower():
+                reply = (
+                    "Impossible de creer l'evenement: le compte Odoo configure n'a pas "
+                    "les droits necessaires sur le calendrier."
+                )
+            elif "calendar.event" in fault and "doesn't exist" in fault:
+                reply = (
+                    "Impossible de creer l'evenement: le module calendrier Odoo "
+                    "n'est pas disponible sur cette base."
+                )
+            else:
+                reply = (
+                    "Impossible de creer l'evenement dans Odoo. "
+                    f"Detail technique: {fault[:300]}."
+                )
+        history.add_user(user_id, user_text)
+        history.add_assistant(user_id, reply)
+        await _reply(update, reply, config)
+        return
 
     history.add_user(user_id, user_text)
     reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1])
