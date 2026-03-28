@@ -1,5 +1,5 @@
 // Service worker for HODOOR PWA - offline shell caching
-const CACHE_NAME = "hodoor-v1";
+const CACHE_NAME = "hodoor-v2";
 const SHELL_ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
