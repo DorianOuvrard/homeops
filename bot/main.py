@@ -6,6 +6,7 @@ from telegram.ext import Application, MessageHandler, filters
 from bot.config import load_config
 from bot.handlers import photo_handler, text_handler, video_handler, video_note_handler, voice_handler
 from bot.history import ConversationHistory
+from bot.odoo import OdooClient, OdooConfig
 from bot.rate_limiter import RateLimiter
 
 logging.basicConfig(
@@ -19,8 +20,12 @@ def main() -> None:
     config = load_config()
     rate_limiter = RateLimiter(max_per_minute=config.rate_limit_per_minute)
     history = ConversationHistory()
+    odoo = OdooClient(OdooConfig(
+        url=config.odoo_url, db=config.odoo_db,
+        user=config.odoo_user, password=config.odoo_password,
+    ))
 
-    deps = {"config": config, "rate_limiter": rate_limiter, "history": history}
+    deps = {"config": config, "rate_limiter": rate_limiter, "history": history, "odoo": odoo}
 
     app = Application.builder().token(config.telegram_token).build()
 

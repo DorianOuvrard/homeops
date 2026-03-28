@@ -3,20 +3,25 @@ import logging
 from openai import OpenAI, APIError, APIConnectionError, RateLimitError
 
 from bot.config import BotConfig
+from bot.odoo import OdooClient
+from bot.tools import TOOLS, dispatch
 
 logger = logging.getLogger(__name__)
+
+_MAX_TOOL_ROUNDS = 5
 
 
 def get_response(
     text: str,
     config: BotConfig,
+    odoo: OdooClient,
     image_urls: list[str] | None = None,
     history: list[dict] | None = None,
 ) -> str:
-    """Send text (and optionally images) to OpenAI ChatGPT and return the reply.
+    """Send text (and optionally images) to OpenAI and return the reply.
 
-    Returns a user-friendly error message instead of raising, so callers
-    never need to handle LLM exceptions.
+    Supports tool calling: if the model requests a tool, we execute it
+    and loop until a final text response (up to _MAX_TOOL_ROUNDS).
     """
     client = OpenAI(api_key=config.openai_api_key)
 
@@ -35,11 +40,31 @@ def get_response(
     messages.append({"role": "user", "content": user_content})
 
     try:
-        completion = client.chat.completions.create(
-            model=config.openai_model,
-            messages=messages,
-        )
-        return completion.choices[0].message.content or "(empty response)"
+        for _ in range(_MAX_TOOL_ROUNDS):
+            completion = client.chat.completions.create(
+                model=config.openai_model,
+                messages=messages,
+                tools=TOOLS,
+            )
+            msg = completion.choices[0].message
+
+            if not msg.tool_calls:
+                return msg.content or "(empty response)"
+
+            # Append the assistant message with tool calls
+            messages.append(msg)
+
+            # Execute each tool call and append results
+            for tc in msg.tool_calls:
+                result = dispatch(odoo, tc.function.name, tc.function.arguments)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result,
+                })
+
+        return "I reached the maximum number of tool calls. Please try a simpler question."
+
     except RateLimitError:
         logger.warning("OpenAI rate limit hit.")
         return "I'm being rate-limited by the AI provider right now. Please try again in a moment."

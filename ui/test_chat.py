@@ -1,4 +1,4 @@
-"""Quick Streamlit chat to test OpenAI integration before wiring the Telegram bot."""
+"""Streamlit chat UI with Odoo tool calling, sharing the bot's tools."""
 
 import base64
 import os
@@ -6,15 +6,40 @@ import os
 import streamlit as st
 from openai import OpenAI
 
+from bot.odoo import OdooClient, OdooConfig
+from bot.tools import TOOLS, dispatch
+
 st.set_page_config(page_title="homeops AI test", layout="centered")
 st.title("homeops AI test")
 
 api_key = os.environ.get("OPENAI_API_KEY", "")
 if not api_key:
-    st.error("OPENAI_API_KEY not set. Run with: OPENAI_API_KEY=sk-... streamlit run test_chat.py")
+    st.error("OPENAI_API_KEY not set.")
     st.stop()
 
 client = OpenAI(api_key=api_key)
+
+MODEL = "gpt-5.4-mini-2026-03-17"
+SYSTEM_PROMPT = (
+    "You are a helpful personal assistant on a chat UI with access to an Odoo ERP system. "
+    "You can search, create, update, and delete records in Odoo (contacts, maintenance requests, equipment, etc.). "
+    "Use the available tools to answer questions about Odoo data. "
+    "Be concise. Answer in the same language as the user."
+)
+MAX_TOOL_ROUNDS = 5
+
+
+@st.cache_resource
+def get_odoo_client() -> OdooClient:
+    return OdooClient(OdooConfig(
+        url=os.environ.get("ODOO_URL", "http://localhost:8069"),
+        db=os.environ.get("ODOO_DB", "homeops"),
+        user=os.environ.get("ODOO_USER", ""),
+        password=os.environ.get("ODOO_PASSWORD", ""),
+    ))
+
+
+odoo = get_odoo_client()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -29,18 +54,18 @@ if uploaded:
     st.sidebar.success(f"{uploaded.name} ({uploaded.size // 1024} KB)")
 
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        if isinstance(msg["content"], str):
-            st.markdown(msg["content"])
-        else:
-            for part in msg["content"]:
-                if part["type"] == "text":
-                    st.markdown(part["text"])
-                elif part["type"] == "image_url":
-                    st.image(part["image_url"]["url"], width=300)
+    if msg["role"] in ("user", "assistant"):
+        with st.chat_message(msg["role"]):
+            if isinstance(msg["content"], str):
+                st.markdown(msg["content"])
+            elif isinstance(msg["content"], list):
+                for part in msg["content"]:
+                    if part.get("type") == "text":
+                        st.markdown(part["text"])
+                    elif part.get("type") == "image_url":
+                        st.image(part["image_url"]["url"], width=300)
 
 if prompt := st.chat_input("Envoie un message..."):
-    # Build user message content
     user_content = []
     display_parts = []
 
@@ -66,19 +91,42 @@ if prompt := st.chat_input("Envoie un message..."):
             if kind == "image":
                 st.image(val, width=300)
             else:
-                st.caption(f"📎 {val}")
+                st.caption(f"\U0001f4ce {val}")
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         with st.spinner("..."):
-            response = client.chat.completions.create(
-                model="gpt-5.4-mini-2026-03-17",
-                messages=[
-                    {"role": "system", "content": "You are a helpful personal assistant. Be concise. Answer in the same language as the user."},
-                    *st.session_state.messages,
-                ],
-            )
-            reply = response.choices[0].message.content or ""
+            # Build API messages (system + history, skipping tool messages for display)
+            api_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+            api_messages.extend(st.session_state.messages)
+
+            # Tool calling loop
+            reply = ""
+            for _ in range(MAX_TOOL_ROUNDS):
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=api_messages,
+                    tools=TOOLS,
+                )
+                msg = response.choices[0].message
+
+                if not msg.tool_calls:
+                    reply = msg.content or ""
+                    break
+
+                # Append assistant message with tool calls
+                api_messages.append(msg)
+
+                for tc in msg.tool_calls:
+                    result = dispatch(odoo, tc.function.name, tc.function.arguments)
+                    api_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": result,
+                    })
+            else:
+                reply = "Too many tool calls. Please try a simpler question."
+
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})

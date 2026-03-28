@@ -10,6 +10,7 @@ from telegram.ext import ContextTypes
 from bot.config import BotConfig
 from bot.history import ConversationHistory
 from bot.llm import get_response
+from bot.odoo import OdooClient
 from bot.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ async def text_handler(
     config: BotConfig,
     rate_limiter: RateLimiter,
     history: ConversationHistory,
+    odoo: OdooClient,
 ) -> None:
     user_id = _user_id(update)
 
@@ -68,7 +70,7 @@ async def text_handler(
     logger.info("Text from user %d: %.80s", user_id, user_text)
 
     history.add_user(user_id, user_text)
-    reply = get_response(user_text, config, history=history.get(user_id)[:-1])
+    reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
     await update.message.reply_text(reply)  # type: ignore[union-attr]
@@ -81,6 +83,7 @@ async def voice_handler(
     config: BotConfig,
     rate_limiter: RateLimiter,
     history: ConversationHistory,
+    odoo: OdooClient,
 ) -> None:
     user_id = _user_id(update)
 
@@ -109,7 +112,7 @@ async def voice_handler(
     logger.info("Transcribed voice from user %d: %.80s", user_id, transcript)
 
     history.add_user(user_id, transcript)
-    reply = get_response(transcript, config, history=history.get(user_id)[:-1])
+    reply = get_response(transcript, config, odoo, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
     await update.message.reply_text(f"🎤 _{transcript}_\n\n{reply}", parse_mode="Markdown")  # type: ignore[union-attr]
@@ -122,6 +125,7 @@ async def photo_handler(
     config: BotConfig,
     rate_limiter: RateLimiter,
     history: ConversationHistory,
+    odoo: OdooClient,
 ) -> None:
     user_id = _user_id(update)
 
@@ -139,7 +143,7 @@ async def photo_handler(
 
     user_text = caption or "What do you see in this image?"
     history.add_user(user_id, f"[photo] {user_text}")
-    reply = get_response(user_text, config, image_urls=[image_url], history=history.get(user_id)[:-1])
+    reply = get_response(user_text, config, odoo, image_urls=[image_url], history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
     await update.message.reply_text(reply)  # type: ignore[union-attr]
@@ -152,6 +156,7 @@ async def video_handler(
     config: BotConfig,
     rate_limiter: RateLimiter,
     history: ConversationHistory,
+    odoo: OdooClient,
 ) -> None:
     user_id = _user_id(update)
 
@@ -175,7 +180,7 @@ async def video_handler(
 
     user_text = caption or f"This is a video ({duration:.0f}s) shown as {len(image_urls)} frames. Describe what you see."
     history.add_user(user_id, f"[video {duration:.0f}s] {user_text}")
-    reply = get_response(user_text, config, image_urls=image_urls, history=history.get(user_id)[:-1])
+    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
     await update.message.reply_text(reply)  # type: ignore[union-attr]
@@ -188,6 +193,7 @@ async def video_note_handler(
     config: BotConfig,
     rate_limiter: RateLimiter,
     history: ConversationHistory,
+    odoo: OdooClient,
 ) -> None:
     user_id = _user_id(update)
 
@@ -210,7 +216,7 @@ async def video_note_handler(
 
     user_text = f"This is a short video message ({duration:.0f}s) shown as {len(image_urls)} frames. Describe what you see."
     history.add_user(user_id, f"[video note {duration:.0f}s]")
-    reply = get_response(user_text, config, image_urls=image_urls, history=history.get(user_id)[:-1])
+    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
     await update.message.reply_text(reply)  # type: ignore[union-attr]

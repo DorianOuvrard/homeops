@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "odoo": {
+      "command": "uvx",
+      "args": ["mcp-server-odoo"],
+      "env": {
+        "ODOO_URL": "http://localhost:8069",
+        "ODOO_DB": "homeops",
+        "ODOO_USER": "ouvrard.dorian@gmail.com",
+        "ODOO_PASSWORD": "homeops",
+        "ODOO_YOLO": "true",
+        "ODOO_LOCALE": "fr_FR"
+      }
+    }
+  }
+}
