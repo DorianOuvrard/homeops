@@ -11,6 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot.chat_registry import ChatRegistry
 from bot.config import BotConfig, load_config
 from bot.handlers import (
+    calendar_handler,
     new_handler,
     photo_handler,
     text_handler,
@@ -157,6 +158,17 @@ def main() -> None:
         .build()
     )
 
+    app.add_handler(
+        CommandHandler(
+            "calendar",
+            partial(
+                calendar_handler,
+                config=config,
+                chat_registry=chat_registry,
+                odoo=odoo,
+            ),
+        )
+    )
     app.add_handler(CommandHandler("new", partial(new_handler, history=history)))
     app.add_handler(CommandHandler("watchcalendar", partial(watchcalendar_handler, chat_registry=chat_registry)))
     app.add_handler(

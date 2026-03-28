@@ -25,7 +25,10 @@ logger = logging.getLogger(__name__)
 _RATE_LIMITED_MSG = (
     "You're sending messages too fast. Please wait a moment before trying again."
 )
-_CALENDAR_TRIGGER = "calendar send"
+_CALENDAR_USAGE = (
+    "Usage: /calendar DESCRIPTION | YYYY-MM-DD | HH:MM\n"
+    "Exemple: /calendar Ajouter du sel dans le lave-vaisselle | 2026-03-28 | 18:30"
+)
 
 
 async def _send_delayed_test_reminder(application, chat_id: int, start_str: str) -> None:
@@ -141,6 +144,61 @@ async def testreminder_handler(
     await update.message.reply_text(reply)  # type: ignore[union-attr]
 
 
+async def calendar_handler(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    *,
+    config: BotConfig,
+    chat_registry: ChatRegistry,
+    odoo: OdooClient,
+) -> None:
+    chat_registry.add(_chat_id(update))
+
+    raw_args = " ".join(context.args).strip()
+    if not raw_args:
+        await update.message.reply_text(_CALENDAR_USAGE)  # type: ignore[union-attr]
+        return
+
+    parts = [part.strip() for part in raw_args.split("|")]
+    if len(parts) != 3 or not all(parts):
+        await update.message.reply_text(_CALENDAR_USAGE)  # type: ignore[union-attr]
+        return
+
+    description, date_str, time_str = parts
+    try:
+        start_at = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        await update.message.reply_text(  # type: ignore[union-attr]
+            "Format de date ou d'heure invalide.\n" + _CALENDAR_USAGE
+        )
+        return
+
+    end_at = start_at + timedelta(hours=1)
+
+    try:
+        event = odoo.create_record(
+            "calendar.event",
+            {
+                "name": description[:80],
+                "description": description,
+                "start": start_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "stop": end_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "allday": False,
+            },
+        )
+        reply = (
+            "Rappel ajoute au calendrier Odoo. "
+            f"Description: {description}. "
+            f"Date: {start_at.strftime('%Y-%m-%d %H:%M')}. "
+            f"Reference: {event['record']['display_name'] or event['record']['id']}."
+        )
+    except xmlrpc.client.Fault as exc:
+        logger.exception("Odoo calendar command creation failed")
+        reply = _format_odoo_calendar_fault(exc, config)
+
+    await update.message.reply_text(reply)  # type: ignore[union-attr]
+
+
 async def todayevents_handler(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -232,29 +290,6 @@ async def text_handler(
     await _send_typing(update)
     user_text = update.message.text or ""  # type: ignore[union-attr]
     logger.info("Text from user %d: %.80s", user_id, user_text)
-
-    if user_text.strip().lower() == _CALENDAR_TRIGGER:
-        try:
-            event = odoo.create_record(
-                "calendar.event",
-                {
-                    "name": "HomeOps Telegram test",
-                    "start": "2026-03-24 13:00:00",
-                    "stop": "2026-03-24 14:00:00",
-                    "allday": False,
-                },
-            )
-            reply = (
-                "Evenement ajoute au calendrier Odoo pour le 24 mars 2026 a 13h. "
-                f"Reference: {event['record']['display_name'] or event['record']['id']}."
-            )
-        except xmlrpc.client.Fault as exc:
-            logger.exception("Odoo calendar event creation failed")
-            reply = _format_odoo_calendar_fault(exc, config)
-        history.add_user(user_id, user_text)
-        history.add_assistant(user_id, reply)
-        await _reply(update, reply, config)
-        return
 
     history.add_user(user_id, user_text)
     reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1])
