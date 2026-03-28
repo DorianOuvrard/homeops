@@ -1,4 +1,5 @@
 import base64
+import io
 import logging
 import subprocess
 import tempfile
@@ -12,12 +13,22 @@ from bot.history import ConversationHistory
 from bot.llm import get_response
 from bot.odoo import OdooClient
 from bot.rate_limiter import RateLimiter
+from bot.tts import text_to_speech
 
 logger = logging.getLogger(__name__)
 
 _RATE_LIMITED_MSG = (
     "You're sending messages too fast. Please wait a moment before trying again."
 )
+
+
+async def _reply(update: Update, reply: str, config: BotConfig) -> None:
+    """Send reply as voice + text caption. Falls back to text-only if TTS fails."""
+    audio = await text_to_speech(reply, config)
+    if audio:
+        await update.message.reply_voice(voice=io.BytesIO(audio), caption=reply[:1024])  # type: ignore[union-attr]
+    else:
+        await update.message.reply_text(reply)  # type: ignore[union-attr]
 
 
 async def new_handler(
@@ -84,7 +95,7 @@ async def text_handler(
     reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
-    await update.message.reply_text(reply)  # type: ignore[union-attr]
+    await _reply(update, reply, config)
 
 
 async def voice_handler(
@@ -126,7 +137,7 @@ async def voice_handler(
     reply = get_response(transcript, config, odoo, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
-    await update.message.reply_text(f"🎤 _{transcript}_\n\n{reply}", parse_mode="Markdown")  # type: ignore[union-attr]
+    await _reply(update, reply, config)
 
 
 async def photo_handler(
@@ -157,7 +168,7 @@ async def photo_handler(
     reply = get_response(user_text, config, odoo, image_urls=[image_url], history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
-    await update.message.reply_text(reply)  # type: ignore[union-attr]
+    await _reply(update, reply, config)
 
 
 async def video_handler(
@@ -194,7 +205,7 @@ async def video_handler(
     reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
-    await update.message.reply_text(reply)  # type: ignore[union-attr]
+    await _reply(update, reply, config)
 
 
 async def video_note_handler(
@@ -230,4 +241,4 @@ async def video_note_handler(
     reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1])
     history.add_assistant(user_id, reply)
 
-    await update.message.reply_text(reply)  # type: ignore[union-attr]
+    await _reply(update, reply, config)

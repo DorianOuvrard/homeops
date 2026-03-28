@@ -17,6 +17,9 @@ class BotConfig:
     odoo_db: str
     odoo_user: str
     odoo_password: str
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "CwhRBWXzGAHq8TQ4Fs17"
+    tavily_api_key: str = ""
     rate_limit_per_minute: int = 20
     openai_model: str = "gpt-5.4-mini-2026-03-17"
     system_prompt: str = dataclasses.field(default_factory=lambda: _load_prompt("system"))
@@ -40,5 +43,8 @@ def load_config() -> BotConfig:
         odoo_db=os.environ.get("ODOO_DB", "homeops"),
         odoo_user=os.environ.get("ODOO_USER", ""),
         odoo_password=os.environ.get("ODOO_PASSWORD", ""),
+        elevenlabs_api_key=os.environ.get("ELEVENLABS_API_KEY", ""),
+        elevenlabs_voice_id=os.environ.get("ELEVENLABS_VOICE_ID", "CwhRBWXzGAHq8TQ4Fs17"),
+        tavily_api_key=os.environ.get("TAVILY_API_KEY", ""),
         rate_limit_per_minute=rate_limit,
     )
