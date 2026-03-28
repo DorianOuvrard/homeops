@@ -105,14 +105,14 @@ class OdooClient:
         start_str = start_at.strftime("%Y-%m-%d %H:%M:%S")
         end_str = end_at.strftime("%Y-%m-%d %H:%M:%S")
         domain = [
-            ("start", ">=", start_str),
-            ("start", "<=", end_str),
+            ("schedule_date", ">=", start_str),
+            ("schedule_date", "<=", end_str),
         ]
-        fields = ["id", "name", "description", "start", "stop", "display_name"]
+        fields = ["id", "name", "description", "schedule_date", "display_name"]
         records = self._execute(
-            "calendar.event",
+            "maintenance.request",
             "search_read",
             [domain],
-            {"fields": fields, "limit": _MAX_LIMIT, "order": "start asc"},
+            {"fields": fields, "limit": _MAX_LIMIT, "order": "schedule_date asc"},
         )
         return {"records": records, "count": len(records), "start": start_str, "end": end_str}

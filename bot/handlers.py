@@ -73,16 +73,20 @@ def _format_odoo_calendar_fault(exc: xmlrpc.client.Fault, config: BotConfig) -> 
         )
     if "AccessError" in fault or "access" in fault.lower():
         return (
-            "Impossible de creer l'evenement: le compte Odoo configure n'a pas "
-            "les droits necessaires sur le calendrier."
+            "Impossible de creer le rappel: le compte Odoo configure n'a pas "
+            "les droits necessaires."
         )
-    if "calendar.event" in fault and "doesn't exist" in fault:
+    if (
+        "calendar.event" in fault and "doesn't exist" in fault
+    ) or (
+        "maintenance.request" in fault and "doesn't exist" in fault
+    ):
         return (
-            "Impossible de creer l'evenement: le module calendrier Odoo "
+            "Impossible de creer le rappel: le module maintenance Odoo "
             "n'est pas disponible sur cette base."
         )
     return (
-        "Impossible de creer l'evenement dans Odoo. "
+        "Impossible de creer le rappel dans Odoo. "
         f"Detail technique: {fault[:300]}."
     )
 
@@ -141,17 +145,17 @@ async def testreminder_handler(
 
     try:
         event = odoo.create_record(
-            "calendar.event",
+            "maintenance.request",
             {
                 "name": "HomeOps Test Reminder",
-                "start": start_str,
-                "stop": end_str,
-                "allday": False,
+                "description": "Rappel de test HomeOps",
+                "schedule_date": start_str,
+                "maintenance_type": "preventive",
             },
         )
         reply = (
             "Test reminder programme. "
-            f"Evenement cree pour {start_str} UTC. "
+            f"Demande planifiee pour {start_str} UTC. "
             "Si le bot tourne toujours, le rappel devrait arriver dans environ une minute. "
             f"Reference: {event['record']['display_name'] or event['record']['id']}."
         )
@@ -194,21 +198,18 @@ async def calendar_handler(
         )
         return
 
-    end_at = start_at + timedelta(hours=1)
-
     try:
         event = odoo.create_record(
-            "calendar.event",
+            "maintenance.request",
             {
                 "name": description[:80],
                 "description": description,
-                "start": start_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "stop": end_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "allday": False,
+                "schedule_date": start_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "maintenance_type": "preventive",
             },
         )
         reply = (
-            "Rappel ajoute au calendrier Odoo. "
+            "Rappel ajoute dans les demandes de maintenance Odoo. "
             f"Description: {description}. "
             f"Date: {start_at.strftime('%Y-%m-%d %H:%M')}. "
             f"Reference: {event['record']['display_name'] or event['record']['id']}."
@@ -244,14 +245,14 @@ async def todayevents_handler(
     records = result["records"]
     if not records:
         await update.message.reply_text(  # type: ignore[union-attr]
-            "Aucun evenement trouve aujourd'hui dans le calendrier Odoo."
+            "Aucune demande planifiee aujourd'hui dans Odoo."
         )
         return
 
-    lines = ["Evenements du jour dans Odoo :"]
+    lines = ["Demandes planifiees du jour dans Odoo :"]
     for record in records:
         lines.append(
-            f"- {record.get('start')} : {record.get('display_name') or record.get('name')}"
+            f"- {record.get('schedule_date')} : {record.get('display_name') or record.get('name')}"
         )
     await update.message.reply_text("\n".join(lines[:40]))  # type: ignore[union-attr]
 

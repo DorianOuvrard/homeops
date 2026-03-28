@@ -66,7 +66,7 @@ async def send_calendar_reminders(app, odoo, chat_registry, reminded: set[str]) 
         return
 
     for record in result["records"]:
-        reminder_key = f"{record['id']}:{record.get('start')}"
+        reminder_key = f"{record['id']}:{record.get('schedule_date')}"
         if reminder_key in reminded:
             continue
 
@@ -82,7 +82,7 @@ async def send_calendar_reminders(app, odoo, chat_registry, reminded: set[str]) 
         logger.info(
             "Calendar reminder due in 1 minute: id=%s start=%s text=%s",
             record.get("id"),
-            record.get("start"),
+            record.get("schedule_date"),
             reminder_text,
         )
         message = reminder_text
