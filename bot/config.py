@@ -9,6 +9,12 @@ def _load_prompt(name: str) -> str:
     return (_PROMPTS_DIR / f"{name}.md").read_text()
 
 
+def _compose_prompt(name: str) -> str:
+    tone = _load_prompt("tone")
+    body = _load_prompt(name)
+    return f"{body}\n\n{tone}"
+
+
 @dataclasses.dataclass(frozen=True)
 class BotConfig:
     telegram_token: str
@@ -21,8 +27,9 @@ class BotConfig:
     elevenlabs_voice_id: str = "CwhRBWXzGAHq8TQ4Fs17"
     tavily_api_key: str = ""
     rate_limit_per_minute: int = 20
-    openai_model: str = "gpt-5.4-mini-2026-03-17"
-    system_prompt: str = dataclasses.field(default_factory=lambda: _load_prompt("system"))
+    openai_model: str = "gpt-5.4-2026-03-05"
+    system_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system"))
+    onboarding_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system_onboarding"))
 
 
 def load_config() -> BotConfig:

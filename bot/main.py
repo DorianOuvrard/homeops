@@ -14,6 +14,9 @@ from bot.handlers import (
     calendar_handler,
     new_handler,
     photo_handler,
+    plan_handler,
+    reset_handler,
+    scan_handler,
     text_handler,
     testreminder_handler,
     todayevents_handler,
@@ -170,6 +173,9 @@ def main() -> None:
         )
     )
     app.add_handler(CommandHandler("new", partial(new_handler, history=history)))
+    app.add_handler(CommandHandler("reset", partial(reset_handler, history=history, odoo=odoo)))
+    app.add_handler(CommandHandler("scan", partial(scan_handler, **deps)))
+    app.add_handler(CommandHandler("plan", partial(plan_handler, **deps)))
     app.add_handler(CommandHandler("watchcalendar", partial(watchcalendar_handler, chat_registry=chat_registry)))
     app.add_handler(
         CommandHandler(

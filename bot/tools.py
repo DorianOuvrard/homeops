@@ -156,6 +156,28 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "set_mode",
+            "description": (
+                "Switch the conversation mode. "
+                "Call set_mode('onboarding') to start the appliance discovery flow. "
+                "Call set_mode('default') when the onboarding is finished (after the final recap)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": ["onboarding", "default"],
+                        "description": "The mode to switch to",
+                    },
+                },
+                "required": ["mode"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_common_issues",
             "description": (
                 "Search for recurring problems, common failures, and user complaints about an appliance. "
@@ -177,7 +199,7 @@ TOOLS = [
 ]
 
 
-def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str) -> str:
+def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str, on_mode_change=None) -> str:
     """Execute a tool call and return the JSON result."""
     args = json.loads(arguments)
     logger.info("Tool call: %s(%s)", name, args)
@@ -201,6 +223,11 @@ def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str) -> 
                 result = odoo.update_record(**args)
             case "delete_record":
                 result = odoo.delete_record(**args)
+            case "set_mode":
+                mode = args.get("mode", "default")
+                if on_mode_change:
+                    on_mode_change(mode)
+                result = {"success": True, "mode": mode}
             case "search_product_docs":
                 if not config.tavily_api_key:
                     result = {"error": "TAVILY_API_KEY not configured"}
