@@ -17,6 +17,7 @@ def get_response(
     odoo: OdooClient,
     image_urls: list[str] | None = None,
     history: list[dict] | None = None,
+    system_prompt: str | None = None,
 ) -> str:
     """Send text (and optionally images) to OpenAI and return the reply.
 
@@ -34,7 +35,7 @@ def get_response(
     else:
         user_content = text
 
-    messages = [{"role": "system", "content": config.system_prompt}]
+    messages = [{"role": "system", "content": system_prompt or config.system_prompt}]
     if history:
         messages.extend(history)
     messages.append({"role": "user", "content": user_content})
@@ -50,6 +51,7 @@ def get_response(
 
             if not msg.tool_calls:
                 logger.info("Response after %d tool round(s)", round_num)
+                logger.info("LLM reply: %.300s", msg.content)
                 return msg.content or "(empty response)"
 
             messages.append(msg)
