@@ -43,3 +43,28 @@ class ApplianceResponse(BaseModel):
     category: str | None = None
     create_date: str | None = None
     maintenance_requests: list[dict] = []
+
+
+class PushSubscriptionKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionRequest(BaseModel):
+    endpoint: str
+    keys: PushSubscriptionKeys
+
+
+class PushVapidResponse(BaseModel):
+    public_key: str
+
+
+class PushDebugResponse(BaseModel):
+    count: int
+    endpoints: list[str]
+
+
+class PushTestRequest(BaseModel):
+    title: str = "Rappel Hodoor"
+    body: str = "Les notifications push sont bien activées."
+    delay_seconds: int = 30

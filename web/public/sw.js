@@ -35,3 +35,21 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });
+
+self.addEventListener("push", (event) => {
+  const payload = event.data ? event.data.json() : {};
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Hodoor", {
+      body: payload.body || "",
+      icon: payload.icon || "/favicon.svg",
+      badge: payload.badge || "/favicon.svg",
+      data: { url: payload.url || "/scan" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/scan";
+  event.waitUntil(clients.openWindow(targetUrl));
+});

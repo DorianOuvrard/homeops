@@ -29,6 +29,7 @@ from bot.handlers import (
 )
 from bot.history import ConversationHistory
 from bot.odoo import OdooClient, OdooConfig
+from bot.push import send_web_push_broadcast
 from bot.rate_limiter import RateLimiter
 from bot.tts import text_to_speech
 
@@ -64,8 +65,15 @@ async def send_calendar_reminders(app, odoo, chat_registry, reminded: set[str]) 
         return
 
     chat_ids = chat_registry.all()
+    if result["count"]:
+        logger.info(
+            "Calendar reminder scan found %s event(s) between %s and %s",
+            result["count"],
+            result["start"],
+            result["end"],
+        )
     if not chat_ids:
-        return
+        logger.info("No Telegram chats registered for reminders; web push will still be attempted")
 
     for record in result["records"]:
         reminder_key = f"{record['id']}:{record.get('schedule_date')}"
@@ -95,6 +103,17 @@ async def send_calendar_reminders(app, odoo, chat_registry, reminded: set[str]) 
                 sent = True
             except Exception as exc:  # pragma: no cover - Telegram/network errors
                 logger.warning("Unable to send reminder to chat %s: %s", chat_id, exc)
+        try:
+            push_count = await send_web_push_broadcast(
+                app.bot_data["bot_config"],
+                "Rappel Hodoor",
+                message,
+            )
+            logger.info("Web push reminder delivery count=%s for record id=%s", push_count, record.get("id"))
+            if push_count:
+                sent = True
+        except Exception as exc:  # pragma: no cover - push/network errors
+            logger.warning("Unable to send web push reminder: %s", exc)
         if sent:
             reminded.add(reminder_key)
 

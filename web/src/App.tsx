@@ -7,6 +7,8 @@ import Settings from "./pages/Settings";
 import ApplianceDetail from "./pages/ApplianceDetail";
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
+import { useEffect } from "react";
+import { syncMaintenanceNotifications } from "./notifications";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -22,6 +24,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    syncMaintenanceNotifications().catch((err) => {
+      console.warn("Unable to schedule notifications", err);
+    });
+  }, [user]);
+
   return (
     <div className="flex flex-col h-screen">
       <Header />

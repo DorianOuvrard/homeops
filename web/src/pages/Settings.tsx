@@ -1,7 +1,39 @@
 import { useAuth } from "../auth";
+import { useState } from "react";
+import {
+  ensurePushSubscription,
+  fetchPushDebug,
+  sendTestNotification,
+} from "../notifications";
 
 export default function Settings() {
   const { user, logout } = useAuth();
+  const [notificationState, setNotificationState] = useState<string>("Non configurées");
+  const [subscriptionCount, setSubscriptionCount] = useState<number | null>(null);
+
+  const enableNotifications = async () => {
+    const result = await ensurePushSubscription();
+    if (result === "unsupported") {
+      setNotificationState("Notifications non supportées sur cet appareil.");
+      return;
+    }
+    if (result === "granted") {
+      const debug = await fetchPushDebug();
+      setSubscriptionCount(debug.count);
+    }
+    setNotificationState(
+      result === "granted"
+        ? "Notifications activées et abonnement push enregistré."
+        : "Permission refusée. Activez-les dans le navigateur.",
+    );
+  };
+
+  const testNotifications = async () => {
+    await sendTestNotification();
+    const debug = await fetchPushDebug();
+    setSubscriptionCount(debug.count);
+    setNotificationState("Notification programmée, elle arrivera dans 30 secondes.");
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -28,6 +60,35 @@ export default function Settings() {
           <div className="px-5 py-4 flex items-center justify-between">
             <span className="text-sm text-gray-600">Thème</span>
             <span className="text-sm text-gray-400">Clair</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Notifications PWA</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Push serveur envoyés vers votre appareil, même si la PWA n'est pas ouverte.
+              </p>
+              <p className="text-xs text-[#1a237e] mt-3">{notificationState}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Souscriptions actives : {subscriptionCount ?? "inconnues"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={enableNotifications}
+              className="rounded-xl bg-[#1a237e] px-4 py-2.5 text-sm font-medium text-white"
+            >
+              Activer
+            </button>
+            <button
+              onClick={testNotifications}
+              className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700"
+            >
+              Envoyer notif
+            </button>
           </div>
         </div>
 

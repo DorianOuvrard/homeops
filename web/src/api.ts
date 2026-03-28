@@ -78,6 +78,14 @@ export interface MaintenanceRequest {
   state?: string;
 }
 
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
 export const api = {
   auth: {
     signup: (email: string, password: string) =>
@@ -120,5 +128,20 @@ export const api = {
       }),
     chatHistory: (id: number) =>
       request<ChatMessage[]>(`/appliances/${id}/chat`),
+  },
+  push: {
+    getVapidPublicKey: () => request<{ public_key: string }>("/push/vapid-public-key"),
+    subscribe: (subscription: PushSubscriptionPayload) =>
+      request<void>("/push/subscribe", {
+        method: "POST",
+        body: JSON.stringify(subscription),
+      }),
+    debug: () =>
+      request<{ count: number; endpoints: string[] }>("/push/debug"),
+    test: (title: string, body: string) =>
+      request<{ queued: number }>("/push/test", {
+        method: "POST",
+        body: JSON.stringify({ title, body, delay_seconds: 30 }),
+      }),
   },
 };
