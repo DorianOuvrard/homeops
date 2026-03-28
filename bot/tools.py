@@ -5,7 +5,7 @@ import logging
 
 from bot.config import BotConfig
 from bot.odoo import OdooClient
-from bot.search import search_product_docs
+from bot.search import search_common_issues, search_product_docs
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +153,27 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_common_issues",
+            "description": (
+                "Search for recurring problems, common failures, and user complaints about an appliance. "
+                "Use when the user asks about known issues, frequent breakdowns, or reliability of an equipment "
+                "(e.g. 'problèmes courants lave-vaisselle Bosch', 'pannes fréquentes chaudière Saunier Duval')."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Appliance name, brand, model, or descriptive search terms",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -185,6 +206,11 @@ def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str) -> 
                     result = {"error": "TAVILY_API_KEY not configured"}
                 else:
                     result = search_product_docs(config.tavily_api_key, **args)
+            case "search_common_issues":
+                if not config.tavily_api_key:
+                    result = {"error": "TAVILY_API_KEY not configured"}
+                else:
+                    result = search_common_issues(config.tavily_api_key, **args)
             case _:
                 result = {"error": f"Unknown tool: {name}"}
     except Exception as exc:
