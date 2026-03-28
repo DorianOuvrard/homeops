@@ -5,6 +5,7 @@ import Chat from "./pages/Chat";
 import Scan from "./pages/Scan";
 import Settings from "./pages/Settings";
 import ApplianceDetail from "./pages/ApplianceDetail";
+import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen">
+      <Header />
       <div className="flex-1 overflow-hidden">{children}</div>
       <BottomNav />
     </div>

@@ -5,11 +5,6 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1a237e] px-4 py-3 flex items-center justify-center shrink-0">
-        <h1 className="text-white font-bold text-lg tracking-wide">Réglages</h1>
-      </div>
-
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {/* Profile */}
         <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">

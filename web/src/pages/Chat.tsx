@@ -73,11 +73,6 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1a237e] px-4 py-3 flex items-center justify-center shrink-0">
-        <h1 className="text-white font-bold text-lg tracking-wide">HODOOR</h1>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
         {initialLoad ? (
