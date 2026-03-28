@@ -8,7 +8,7 @@ class BotConfig:
     openai_api_key: str
     rate_limit_per_minute: int = 20
     openai_model: str = "gpt-5.4-mini-2026-03-17"
-    system_prompt: str = "You are a helpful personal assistant on Telegram. Be concise."
+    system_prompt: str = "You are a helpful personal assistant on Telegram. Be concise. Answer in the same language as the user."
 
 
 def load_config() -> BotConfig:
