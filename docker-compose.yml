@@ -32,6 +32,33 @@ services:
       retries: 5
     restart: unless-stopped
 
+  odoo-init:
+    image: python:3.12-slim
+    container_name: homeops-odoo-init
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: homeops
+      ODOO_USER: ${ODOO_USER:-admin}
+      ODOO_PASSWORD: ${ODOO_PASSWORD:-admin}
+      ODOO_INIT_RETRIES: "60"
+      ODOO_INIT_DELAY: "5"
+    command: python /scripts/init_odoo_data.py
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homeops-telegram-bot
+    env_file:
+      - .env
+    restart: unless-stopped
+
 volumes:
   odoo-data:
   pg-data:
