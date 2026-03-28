@@ -27,7 +27,7 @@ class BotConfig:
     elevenlabs_voice_id: str = "CwhRBWXzGAHq8TQ4Fs17"
     tavily_api_key: str = ""
     rate_limit_per_minute: int = 20
-    openai_model: str = "gpt-5.4-mini-2026-03-17"
+    openai_model: str = "gpt-5.4-2026-03-05"
     system_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system"))
     onboarding_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system_onboarding"))
 

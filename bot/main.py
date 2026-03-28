@@ -4,7 +4,7 @@ from functools import partial
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from bot.config import load_config
-from bot.handlers import new_handler, photo_handler, reset_handler, scan_handler, text_handler, video_handler, video_note_handler, voice_handler
+from bot.handlers import new_handler, photo_handler, plan_handler, reset_handler, scan_handler, text_handler, video_handler, video_note_handler, voice_handler
 from bot.history import ConversationHistory
 from bot.odoo import OdooClient, OdooConfig
 from bot.rate_limiter import RateLimiter
@@ -32,6 +32,7 @@ def main() -> None:
     app.add_handler(CommandHandler("new", partial(new_handler, history=history)))
     app.add_handler(CommandHandler("reset", partial(reset_handler, history=history, odoo=odoo)))
     app.add_handler(CommandHandler("scan", partial(scan_handler, **deps)))
+    app.add_handler(CommandHandler("plan", partial(plan_handler, **deps)))
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, partial(text_handler, **deps))
     )
