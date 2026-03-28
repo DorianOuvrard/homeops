@@ -20,6 +20,17 @@ _RATE_LIMITED_MSG = (
 )
 
 
+async def new_handler(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    *,
+    history: ConversationHistory,
+) -> None:
+    user_id = _user_id(update)
+    history.clear(user_id)
+    await update.message.reply_text("Nouvelle conversation démarrée.")  # type: ignore[union-attr]
+
+
 def _user_id(update: Update) -> int:
     return update.effective_user.id  # type: ignore[union-attr]
 

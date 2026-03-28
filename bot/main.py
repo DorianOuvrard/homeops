@@ -1,10 +1,10 @@
 import logging
 from functools import partial
 
-from telegram.ext import Application, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from bot.config import load_config
-from bot.handlers import photo_handler, text_handler, video_handler, video_note_handler, voice_handler
+from bot.handlers import new_handler, photo_handler, text_handler, video_handler, video_note_handler, voice_handler
 from bot.history import ConversationHistory
 from bot.odoo import OdooClient, OdooConfig
 from bot.rate_limiter import RateLimiter
@@ -29,6 +29,7 @@ def main() -> None:
 
     app = Application.builder().token(config.telegram_token).build()
 
+    app.add_handler(CommandHandler("new", partial(new_handler, history=history)))
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, partial(text_handler, **deps))
     )
