@@ -8,7 +8,7 @@ from bot.tools import TOOLS, dispatch
 
 logger = logging.getLogger(__name__)
 
-_MAX_TOOL_ROUNDS = 5
+_MAX_TOOL_ROUNDS = 10
 
 
 def get_response(
@@ -40,7 +40,7 @@ def get_response(
     messages.append({"role": "user", "content": user_content})
 
     try:
-        for _ in range(_MAX_TOOL_ROUNDS):
+        for round_num in range(_MAX_TOOL_ROUNDS):
             completion = client.chat.completions.create(
                 model=config.openai_model,
                 messages=messages,
@@ -49,13 +49,13 @@ def get_response(
             msg = completion.choices[0].message
 
             if not msg.tool_calls:
+                logger.info("Response after %d tool round(s)", round_num)
                 return msg.content or "(empty response)"
 
-            # Append the assistant message with tool calls
             messages.append(msg)
 
-            # Execute each tool call and append results
             for tc in msg.tool_calls:
+                logger.info("Round %d: %s(%s)", round_num + 1, tc.function.name, tc.function.arguments)
                 result = dispatch(odoo, tc.function.name, tc.function.arguments)
                 messages.append({
                     "role": "tool",
@@ -63,7 +63,8 @@ def get_response(
                     "content": result,
                 })
 
-        return "I reached the maximum number of tool calls. Please try a simpler question."
+        logger.warning("Hit max tool rounds (%d)", _MAX_TOOL_ROUNDS)
+        return "J'ai fait trop d'appels. Reformule ta demande plus simplement."
 
     except RateLimitError:
         logger.warning("OpenAI rate limit hit.")

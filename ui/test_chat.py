@@ -23,7 +23,7 @@ MODEL = "gpt-5.4-mini-2026-03-17"
 from bot.config import _load_prompt
 
 SYSTEM_PROMPT = _load_prompt("system")
-MAX_TOOL_ROUNDS = 5
+MAX_TOOL_ROUNDS = 10
 
 
 @st.cache_resource

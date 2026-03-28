@@ -84,12 +84,16 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_record",
-            "description": "Create a new record in Odoo (e.g. a maintenance request, a contact).",
+            "description": (
+                "Create a new record in Odoo. "
+                "You MUST provide values with at least a 'name' field. "
+                "Example: model='maintenance.equipment', values={'name': 'Sauna', 'category_id': 1}"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "model": {"type": "string", "description": "Odoo model name"},
-                    "values": {"type": "object", "description": "Field values for the new record"},
+                    "values": {"type": "object", "description": "Field values for the new record. MUST include at least 'name'."},
                 },
                 "required": ["model", "values"],
             },
@@ -145,7 +149,10 @@ def dispatch(odoo: OdooClient, name: str, arguments: str) -> str:
             case "get_fields":
                 result = odoo.get_fields(**args)
             case "create_record":
-                result = odoo.create_record(**args)
+                if "values" not in args or not args["values"]:
+                    result = {"error": "values is required and must include at least 'name'"}
+                else:
+                    result = odoo.create_record(**args)
             case "update_record":
                 result = odoo.update_record(**args)
             case "delete_record":
