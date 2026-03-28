@@ -4,7 +4,8 @@ from functools import partial
 from telegram.ext import Application, MessageHandler, filters
 
 from bot.config import load_config
-from bot.handlers import photo_handler, text_handler, video_handler, voice_handler
+from bot.handlers import photo_handler, text_handler, video_handler, video_note_handler, voice_handler
+from bot.history import ConversationHistory
 from bot.rate_limiter import RateLimiter
 
 logging.basicConfig(
@@ -17,34 +18,26 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     config = load_config()
     rate_limiter = RateLimiter(max_per_minute=config.rate_limit_per_minute)
+    history = ConversationHistory()
+
+    deps = {"config": config, "rate_limiter": rate_limiter, "history": history}
 
     app = Application.builder().token(config.telegram_token).build()
 
-    # Bind config and rate_limiter into each handler via partial so the handler
-    # signatures remain compatible with python-telegram-bot's callback protocol.
     app.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            partial(text_handler, config=config, rate_limiter=rate_limiter),
-        )
+        MessageHandler(filters.TEXT & ~filters.COMMAND, partial(text_handler, **deps))
     )
     app.add_handler(
-        MessageHandler(
-            filters.VOICE,
-            partial(voice_handler, config=config, rate_limiter=rate_limiter),
-        )
+        MessageHandler(filters.VOICE, partial(voice_handler, **deps))
     )
     app.add_handler(
-        MessageHandler(
-            filters.PHOTO,
-            partial(photo_handler, config=config, rate_limiter=rate_limiter),
-        )
+        MessageHandler(filters.PHOTO, partial(photo_handler, **deps))
     )
     app.add_handler(
-        MessageHandler(
-            filters.VIDEO,
-            partial(video_handler, config=config, rate_limiter=rate_limiter),
-        )
+        MessageHandler(filters.VIDEO, partial(video_handler, **deps))
+    )
+    app.add_handler(
+        MessageHandler(filters.VIDEO_NOTE, partial(video_note_handler, **deps))
     )
 
     logger.info("Bot starting (polling)...")

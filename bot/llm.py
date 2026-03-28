@@ -7,21 +7,37 @@ from bot.config import BotConfig
 logger = logging.getLogger(__name__)
 
 
-def get_response(text: str, config: BotConfig) -> str:
-    """Send text to OpenAI ChatGPT and return the reply.
+def get_response(
+    text: str,
+    config: BotConfig,
+    image_urls: list[str] | None = None,
+    history: list[dict] | None = None,
+) -> str:
+    """Send text (and optionally images) to OpenAI ChatGPT and return the reply.
 
     Returns a user-friendly error message instead of raising, so callers
     never need to handle LLM exceptions.
     """
     client = OpenAI(api_key=config.openai_api_key)
 
+    if image_urls:
+        user_content: list[dict] | str = [
+            {"type": "image_url", "image_url": {"url": url}}
+            for url in image_urls
+        ]
+        user_content.append({"type": "text", "text": text or "Describe what you see."})
+    else:
+        user_content = text
+
+    messages = [{"role": "system", "content": config.system_prompt}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": user_content})
+
     try:
         completion = client.chat.completions.create(
             model=config.openai_model,
-            messages=[
-                {"role": "system", "content": config.system_prompt},
-                {"role": "user", "content": text},
-            ],
+            messages=messages,
         )
         return completion.choices[0].message.content or "(empty response)"
     except RateLimitError:
