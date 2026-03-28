@@ -8,12 +8,9 @@ services:
       HOST: db
       USER: odoo
       PASSWORD: odoo
-      ODOO_MASTER_PASSWORD: ${ODOO_MASTER_PASSWORD}
-    entrypoint: ["/bin/sh", "-c", "sed 's/$${ODOO_MASTER_PASSWORD}/'\"$$ODOO_MASTER_PASSWORD\"'/' /etc/odoo/odoo.conf.tpl > /etc/odoo/odoo.conf && exec /entrypoint.sh odoo"]
     volumes:
       - odoo-data:/var/lib/odoo
       - odoo-addons:/mnt/extra-addons
-      - ./odoo.conf.tpl:/etc/odoo/odoo.conf.tpl:ro
     depends_on:
       db:
         condition: service_healthy
