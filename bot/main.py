@@ -6,8 +6,10 @@ import re
 from datetime import datetime, timedelta
 from functools import partial
 
+import uvicorn
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
+from bot.api.app import create_app
 from bot.chat_registry import ChatRegistry
 from bot.config import BotConfig, load_config
 from bot.handlers import (
@@ -117,22 +119,64 @@ async def reminder_loop(app, odoo, chat_registry) -> None:
         await asyncio.sleep(60)
 
 
-async def on_startup(app, *, config, odoo, chat_registry) -> None:
-    app.bot_data["bot_config"] = config
-    app.bot_data["calendar_reminder_task"] = asyncio.create_task(
-        reminder_loop(app, odoo, chat_registry)
+def _build_telegram_app(config: BotConfig, deps: dict) -> Application:
+    """Build the python-telegram-bot Application with all handlers registered."""
+    app = Application.builder().token(config.telegram_token).build()
+
+    app.add_handler(
+        CommandHandler(
+            "calendar",
+            partial(
+                calendar_handler,
+                config=config,
+                chat_registry=deps["chat_registry"],
+                odoo=deps["odoo"],
+            ),
+        )
     )
-
-
-async def on_shutdown(app) -> None:
-    task = app.bot_data.get("calendar_reminder_task")
-    if task is None:
-        return
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        logger.info("Calendar reminder loop stopped")
+    app.add_handler(CommandHandler("new", partial(new_handler, history=deps["history"])))
+    app.add_handler(CommandHandler("reset", partial(reset_handler, history=deps["history"], odoo=deps["odoo"])))
+    app.add_handler(CommandHandler("scan", partial(scan_handler, config=config, rate_limiter=deps["rate_limiter"], history=deps["history"], odoo=deps["odoo"])))
+    app.add_handler(CommandHandler("plan", partial(plan_handler, config=config, rate_limiter=deps["rate_limiter"], history=deps["history"], odoo=deps["odoo"])))
+    app.add_handler(CommandHandler("watchcalendar", partial(watchcalendar_handler, chat_registry=deps["chat_registry"])))
+    app.add_handler(
+        CommandHandler(
+            "testreminder",
+            partial(
+                testreminder_handler,
+                config=config,
+                chat_registry=deps["chat_registry"],
+                odoo=deps["odoo"],
+            ),
+        )
+    )
+    app.add_handler(
+        CommandHandler(
+            "todayevents",
+            partial(
+                todayevents_handler,
+                config=config,
+                chat_registry=deps["chat_registry"],
+                odoo=deps["odoo"],
+            ),
+        )
+    )
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, partial(text_handler, **deps))
+    )
+    app.add_handler(
+        MessageHandler(filters.VOICE, partial(voice_handler, **deps))
+    )
+    app.add_handler(
+        MessageHandler(filters.PHOTO, partial(photo_handler, **deps))
+    )
+    app.add_handler(
+        MessageHandler(filters.VIDEO, partial(video_handler, **deps))
+    )
+    app.add_handler(
+        MessageHandler(filters.VIDEO_NOTE, partial(video_note_handler, **deps))
+    )
+    return app
 
 
 def main() -> None:
@@ -153,69 +197,29 @@ def main() -> None:
         "odoo": odoo,
     }
 
-    app = (
-        Application.builder()
-        .token(config.telegram_token)
-        .post_init(partial(on_startup, config=config, odoo=odoo, chat_registry=chat_registry))
-        .post_shutdown(on_shutdown)
-        .build()
-    )
+    telegram_app = _build_telegram_app(config, deps)
 
-    app.add_handler(
-        CommandHandler(
-            "calendar",
-            partial(
-                calendar_handler,
-                config=config,
-                chat_registry=chat_registry,
-                odoo=odoo,
-            ),
+    # Store config in bot_data so reminder loop can access it
+    telegram_app.bot_data["bot_config"] = config
+
+    # The reminder loop will be started after Telegram bot initializes
+    # (inside FastAPI lifespan, after polling starts). We schedule it
+    # as a coroutine that the lifespan will launch.
+    async def start_reminder_loop():
+        await asyncio.sleep(2)  # Brief delay to let bot connect
+        reminder_task = asyncio.create_task(
+            reminder_loop(telegram_app, odoo, chat_registry)
         )
-    )
-    app.add_handler(CommandHandler("new", partial(new_handler, history=history)))
-    app.add_handler(CommandHandler("reset", partial(reset_handler, history=history, odoo=odoo)))
-    app.add_handler(CommandHandler("scan", partial(scan_handler, config=config, rate_limiter=rate_limiter, history=history, odoo=odoo)))
-    app.add_handler(CommandHandler("plan", partial(plan_handler, config=config, rate_limiter=rate_limiter, history=history, odoo=odoo)))
-    app.add_handler(CommandHandler("watchcalendar", partial(watchcalendar_handler, chat_registry=chat_registry)))
-    app.add_handler(
-        CommandHandler(
-            "testreminder",
-            partial(
-                testreminder_handler,
-                config=config,
-                chat_registry=chat_registry,
-                odoo=odoo,
-            ),
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "todayevents",
-            partial(
-                todayevents_handler,
-                config=config,
-                chat_registry=chat_registry,
-                odoo=odoo,
-            ),
-        )
-    )
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, partial(text_handler, **deps))
-    )
-    app.add_handler(
-        MessageHandler(filters.VOICE, partial(voice_handler, **deps))
-    )
-    app.add_handler(
-        MessageHandler(filters.PHOTO, partial(photo_handler, **deps))
-    )
-    app.add_handler(
-        MessageHandler(filters.VIDEO, partial(video_handler, **deps))
-    )
-    app.add_handler(
-        MessageHandler(filters.VIDEO_NOTE, partial(video_note_handler, **deps))
-    )
-    logger.info("Bot starting (polling)...")
-    app.run_polling()
+        deps["reminder_task"] = reminder_task
+        return reminder_task
+
+    deps["telegram_app"] = telegram_app
+    deps["start_reminder_loop"] = start_reminder_loop
+
+    fastapi_app = create_app(config, deps)
+
+    logger.info("Starting HODOOR API on port %d...", config.api_port)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=config.api_port, log_level="info")
 
 
 if __name__ == "__main__":

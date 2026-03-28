@@ -30,6 +30,10 @@ class BotConfig:
     openai_model: str = "gpt-5.4-2026-03-05"
     system_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system"))
     onboarding_prompt: str = dataclasses.field(default_factory=lambda: _compose_prompt("system_onboarding"))
+    # Web API settings
+    jwt_secret: str = ""
+    sqlite_path: str = "data/hodoor.db"
+    api_port: int = 8000
 
 
 def load_config() -> BotConfig:
@@ -54,4 +58,7 @@ def load_config() -> BotConfig:
         elevenlabs_voice_id=os.environ.get("ELEVENLABS_VOICE_ID", "CwhRBWXzGAHq8TQ4Fs17"),
         tavily_api_key=os.environ.get("TAVILY_API_KEY", ""),
         rate_limit_per_minute=rate_limit,
+        jwt_secret=os.environ.get("JWT_SECRET", ""),
+        sqlite_path=os.environ.get("SQLITE_PATH", "data/hodoor.db"),
+        api_port=int(os.environ.get("API_PORT", "8000")),
     )
