@@ -1,9 +1,11 @@
-"""OpenAI function-calling tool definitions and dispatcher for Odoo."""
+"""OpenAI function-calling tool definitions and dispatcher."""
 
 import json
 import logging
 
+from bot.config import BotConfig
 from bot.odoo import OdooClient
+from bot.search import search_product_docs
 
 logger = logging.getLogger(__name__)
 
@@ -130,10 +132,31 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_product_docs",
+            "description": (
+                "Search the web for product documentation, user manuals, technical specs, or repair guides. "
+                "Use when the user asks about a specific product reference, model number, or needs technical info "
+                "about an equipment (e.g. 'notice du Samsung WW90T554DAW', 'fiche technique chaudière Saunier Duval')."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Product reference, model number, or descriptive search terms",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
-def dispatch(odoo: OdooClient, name: str, arguments: str) -> str:
+def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str) -> str:
     """Execute a tool call and return the JSON result."""
     args = json.loads(arguments)
     logger.info("Tool call: %s(%s)", name, args)
@@ -157,6 +180,11 @@ def dispatch(odoo: OdooClient, name: str, arguments: str) -> str:
                 result = odoo.update_record(**args)
             case "delete_record":
                 result = odoo.delete_record(**args)
+            case "search_product_docs":
+                if not config.tavily_api_key:
+                    result = {"error": "TAVILY_API_KEY not configured"}
+                else:
+                    result = search_product_docs(config.tavily_api_key, **args)
             case _:
                 result = {"error": f"Unknown tool: {name}"}
     except Exception as exc:

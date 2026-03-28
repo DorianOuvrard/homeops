@@ -56,7 +56,7 @@ def get_response(
 
             for tc in msg.tool_calls:
                 logger.info("Round %d: %s(%s)", round_num + 1, tc.function.name, tc.function.arguments)
-                result = dispatch(odoo, tc.function.name, tc.function.arguments)
+                result = dispatch(config, odoo, tc.function.name, tc.function.arguments)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tc.id,
