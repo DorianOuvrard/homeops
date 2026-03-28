@@ -1,5 +1,12 @@
 import dataclasses
 import os
+from pathlib import Path
+
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+
+
+def _load_prompt(name: str) -> str:
+    return (_PROMPTS_DIR / f"{name}.md").read_text()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -12,12 +19,7 @@ class BotConfig:
     odoo_password: str
     rate_limit_per_minute: int = 20
     openai_model: str = "gpt-5.4-mini-2026-03-17"
-    system_prompt: str = (
-        "You are a helpful personal assistant on Telegram with access to an Odoo ERP system. "
-        "You can search, create, update, and delete records in Odoo (contacts, maintenance requests, equipment, etc.). "
-        "Use the available tools to answer questions about Odoo data. "
-        "Be concise. Answer in the same language as the user."
-    )
+    system_prompt: str = dataclasses.field(default_factory=lambda: _load_prompt("system"))
 
 
 def load_config() -> BotConfig:

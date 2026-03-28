@@ -20,12 +20,9 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 MODEL = "gpt-5.4-mini-2026-03-17"
-SYSTEM_PROMPT = (
-    "You are a helpful personal assistant on a chat UI with access to an Odoo ERP system. "
-    "You can search, create, update, and delete records in Odoo (contacts, maintenance requests, equipment, etc.). "
-    "Use the available tools to answer questions about Odoo data. "
-    "Be concise. Answer in the same language as the user."
-)
+from bot.config import _load_prompt
+
+SYSTEM_PROMPT = _load_prompt("system")
 MAX_TOOL_ROUNDS = 5
 
 
