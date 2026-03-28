@@ -11,7 +11,9 @@ export default function Scan() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
-  const [tipOpen, setTipOpen] = useState(true);
+  const [tipOpen, setTipOpen] = useState(
+    () => localStorage.getItem("scan_tip_dismissed") !== "true",
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -243,7 +245,10 @@ export default function Scan() {
               </p>
             </div>
             <button
-              onClick={() => setTipOpen(false)}
+              onClick={() => {
+                setTipOpen(false);
+                localStorage.setItem("scan_tip_dismissed", "true");
+              }}
               className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
