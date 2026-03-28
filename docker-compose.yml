@@ -37,11 +37,20 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: homeops-telegram-bot
+    ports:
+      - "8000:8000"
     env_file:
       - .env
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      SQLITE_PATH: /data/hodoor.db
+      API_PORT: "8000"
+    volumes:
+      - hodoor-data:/data
     restart: unless-stopped
 
 volumes:
   odoo-data:
   pg-data:
   odoo-addons:
+  hodoor-data:

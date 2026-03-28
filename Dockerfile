@@ -1,3 +1,13 @@
+# Stage 1: Build React PWA
+FROM node:22-alpine AS web-builder
+WORKDIR /web
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY web/ ./
+RUN pnpm build
+
+# Stage 2: Python bot + FastAPI server
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -14,5 +24,11 @@ COPY bot/ ./bot/
 # Install the package and its dependencies into the system Python.
 # --no-cache avoids storing the uv cache layer inside the image.
 RUN uv pip install --system --no-cache .
+
+# Copy built React PWA to be served as static files.
+COPY --from=web-builder /web/dist ./web/dist
+
+# Expose FastAPI port
+EXPOSE 8000
 
 CMD ["python", "-m", "bot.main"]
