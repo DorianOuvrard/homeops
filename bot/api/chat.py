@@ -18,12 +18,14 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_id: str) -> str:
     """Run get_response in a thread pool to avoid blocking the event loop."""
     from bot.llm import get_response
+    from bot import session
 
     history_obj = deps["history"]
     config = deps["config"]
     odoo = deps["odoo"]
 
     past = history_obj.get(user_id)
+    session.detect_onboarding(user_id, past, odoo)
     history_obj.add_user(user_id, f"[photo] {text}" if image_urls else text)
     reply = get_response(
         text,
@@ -31,6 +33,8 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
         odoo,
         image_urls=image_urls,
         history=past,
+        system_prompt=session.get_system_prompt(user_id, config),
+        on_mode_change=session.mode_callback(user_id),
     )
     history_obj.add_assistant(user_id, reply)
     return reply
@@ -40,6 +44,30 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
 async def send_message(body: ChatMessageRequest, current_user: CurrentUser):
     deps = get_deps()
     user_id = current_user.id
+
+    # Intercept slash commands before hitting the LLM
+    if body.text.strip().startswith("/"):
+        from bot.commands import dispatch_command
+
+        try:
+            reply = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: dispatch_command(
+                    body.text, user_id, deps["config"], deps["history"], deps["odoo"]
+                ),
+            )
+        except Exception as exc:
+            logger.error("Command error for user %s: %s", user_id, exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Command execution error.",
+            )
+        if reply is not None:
+            return ChatMessageResponse(
+                reply=reply,
+                timestamp=datetime.now(UTC).isoformat(),
+            )
+
     try:
         reply = await asyncio.get_event_loop().run_in_executor(
             None,

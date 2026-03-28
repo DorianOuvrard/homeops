@@ -19,21 +19,10 @@ from bot.history import ConversationHistory
 from bot.llm import get_response
 from bot.odoo import OdooClient
 from bot.rate_limiter import RateLimiter
+from bot import session
 from bot.tts import text_to_speech
 
 logger = logging.getLogger(__name__)
-
-_onboarding_users: set[int] = set()
-
-
-def _mode_callback(user_id: int):
-    """Return a callback that updates the user's conversation mode."""
-    def on_mode_change(mode: str) -> None:
-        if mode == "onboarding":
-            _onboarding_users.add(user_id)
-        else:
-            _onboarding_users.discard(user_id)
-    return on_mode_change
 
 
 def _typing_callback(update: Update):
@@ -292,11 +281,11 @@ async def scan_handler(
         result = odoo.search_records(model, domain=[], fields=["id"], limit=50)
         for rec in result.get("records", []):
             odoo.delete_record(model, rec["id"])
-    _onboarding_users.add(user_id)
+    session.force_onboarding(user_id)
     trigger_msg = "Salut"
     history.add_user(user_id, trigger_msg)
     cb = _typing_callback(update)
-    reply = get_response(trigger_msg, config, odoo, history=[], system_prompt=config.onboarding_prompt, on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(trigger_msg, config, odoo, history=[], system_prompt=config.onboarding_prompt, on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
     await _reply(update, reply, config)
 
@@ -312,7 +301,7 @@ async def plan_handler(
 ) -> None:
     """Hidden command: skip to the end-of-scan recap and prevention plan."""
     user_id = _user_id(update)
-    _onboarding_users.add(user_id)
+    session.force_onboarding(user_id)
     await _send_typing(update)
     # Clear existing preventive maintenance requests to avoid duplicates
     result = odoo.search_records("maintenance.request", domain=[["maintenance_type", "=", "preventive"]], fields=["id"], limit=50)
@@ -321,7 +310,7 @@ async def plan_handler(
     trigger_msg = "J'ai fini, fais le récap et le plan de prévention."
     history.add_user(user_id, trigger_msg)
     cb = _typing_callback(update)
-    reply = get_response(trigger_msg, config, odoo, history=[], system_prompt=config.onboarding_prompt, on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(trigger_msg, config, odoo, history=[], system_prompt=config.onboarding_prompt, on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
     await _reply(update, reply, config)
 
@@ -382,20 +371,12 @@ async def text_handler(
     user_text = update.message.text or ""  # type: ignore[union-attr]
     logger.info("Text from user %d: %.80s", user_id, user_text)
 
-    # Auto-trigger onboarding for new users with empty inventory
     past_history = history.get(user_id)[:-1] if history.get(user_id) else []
-    if not past_history and user_id not in _onboarding_users:
-        try:
-            result = odoo.search_records("maintenance.equipment", domain=[], fields=["id"], limit=1)
-            if result.get("total", 0) == 0:
-                _onboarding_users.add(user_id)
-        except Exception:
-            pass
+    session.detect_onboarding(user_id, past_history, odoo)
 
-    prompt = config.onboarding_prompt if user_id in _onboarding_users else None
     history.add_user(user_id, user_text)
     cb = _typing_callback(update)
-    reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1], system_prompt=prompt, on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(user_text, config, odoo, history=history.get(user_id)[:-1], system_prompt=session.get_system_prompt(user_id, config), on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
 
     await _reply(update, reply, config)
@@ -439,10 +420,9 @@ async def voice_handler(
 
     logger.info("Transcribed voice from user %d: %.80s", user_id, transcript)
 
-    prompt = config.onboarding_prompt if user_id in _onboarding_users else None
     history.add_user(user_id, transcript)
     cb = _typing_callback(update)
-    reply = get_response(transcript, config, odoo, history=history.get(user_id)[:-1], system_prompt=prompt, on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(transcript, config, odoo, history=history.get(user_id)[:-1], system_prompt=session.get_system_prompt(user_id, config), on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
 
     await _reply(update, reply, config)
@@ -474,11 +454,10 @@ async def photo_handler(
     b64 = base64.b64encode(photo_bytes).decode()
     image_url = f"data:image/jpeg;base64,{b64}"
 
-    prompt = config.onboarding_prompt if user_id in _onboarding_users else None
     user_text = caption or "Analyse cette photo."
     history.add_user(user_id, f"[photo] {user_text}")
     cb = _typing_callback(update)
-    reply = get_response(user_text, config, odoo, image_urls=[image_url], history=history.get(user_id)[:-1], system_prompt=prompt, on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(user_text, config, odoo, image_urls=[image_url], history=history.get(user_id)[:-1], system_prompt=session.get_system_prompt(user_id, config), on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
 
     await _reply(update, reply, config)
@@ -519,7 +498,7 @@ async def video_handler(
     user_text = caption or f"This is a video ({duration:.0f}s) shown as {len(image_urls)} frames. Describe what you see."
     history.add_user(user_id, f"[video {duration:.0f}s] {user_text}")
     cb = _typing_callback(update)
-    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1], on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1], system_prompt=session.get_system_prompt(user_id, config), on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
 
     await _reply(update, reply, config)
@@ -559,7 +538,7 @@ async def video_note_handler(
     user_text = f"This is a short video message ({duration:.0f}s) shown as {len(image_urls)} frames. Describe what you see."
     history.add_user(user_id, f"[video note {duration:.0f}s]")
     cb = _typing_callback(update)
-    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1], on_mode_change=_mode_callback(user_id), on_tool_round=cb)
+    reply = get_response(user_text, config, odoo, image_urls=image_urls, history=history.get(user_id)[:-1], system_prompt=session.get_system_prompt(user_id, config), on_mode_change=session.mode_callback(user_id), on_tool_round=cb)
     history.add_assistant(user_id, reply)
 
     await _reply(update, reply, config)
