@@ -60,7 +60,7 @@ export default function BottomNav() {
           {({ isActive }) => (
             <>
               <HomeIcon filled={isActive} />
-              <span>ACCUEIL</span>
+              <span>MAISON</span>
             </>
           )}
         </NavLink>
