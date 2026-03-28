@@ -1,6 +1,6 @@
 from collections import defaultdict, deque
 
-MAX_MESSAGES = 20
+MAX_MESSAGES = 50
 
 
 class ConversationHistory:
