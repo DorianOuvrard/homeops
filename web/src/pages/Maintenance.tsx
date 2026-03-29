@@ -119,10 +119,14 @@ function countThisWeekTasks(tasks: MaintenanceTask[]): number {
 
 function computeHealthScore(tasks: MaintenanceTask[]): number {
   if (tasks.length === 0) return 100;
-  const overdue = tasks.filter((t) => classifyDate(t.schedule_date) === "overdue").length;
-  const thisWeek = tasks.filter((t) => classifyDate(t.schedule_date) === "thisWeek").length;
-  // Overdue tasks cost 15pts each, this-week tasks cost 3pts each
-  const penalty = overdue * 15 + thisWeek * 3;
+  let penalty = 0;
+  for (const t of tasks) {
+    const group = classifyDate(t.schedule_date);
+    if (group === "overdue") penalty += 20;
+    else if (group === "thisWeek") penalty += 8;
+    else if (group === "thisMonth") penalty += 4;
+    else penalty += 2; // later + unplanned still count
+  }
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 
