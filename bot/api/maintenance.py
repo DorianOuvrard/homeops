@@ -50,7 +50,7 @@ async def list_maintenance(current_user: CurrentUser):
             None,
             lambda: odoo.search_records(
                 "maintenance.request",
-                domain=[],
+                domain=[["stage_id.name", "not in", ["Repaired", "Scrap"]]],
                 fields=_TASK_FIELDS,
                 limit=50,
                 order="schedule_date asc",
