@@ -1,18 +1,18 @@
 {
   "apps": [
     {
-      "app_id": "app_56532bca-2aa5-4cb2-9959-daf702d05b19",
-      "org_id": "user_01aefd04-9539-4e03-ba78-f268abf6e0e0",
-      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_56532bca-2aa5-4cb2-9959-daf702d05b19.git",
-      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_56532bca-2aa5-4cb2-9959-daf702d05b19.git",
+      "app_id": "app_e930e3a9-8a9d-4e62-821f-3a4097db7810",
+      "org_id": "user_b57321f1-eedc-4330-9778-e5c4fcad362e",
+      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_e930e3a9-8a9d-4e62-821f-3a4097db7810.git",
+      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_e930e3a9-8a9d-4e62-821f-3a4097db7810.git",
       "name": "homeops-odoo",
       "alias": "homeops-odoo"
     },
     {
-      "app_id": "app_9af8d95a-d630-4d59-913b-421c6c26614d",
-      "org_id": "user_01aefd04-9539-4e03-ba78-f268abf6e0e0",
-      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_9af8d95a-d630-4d59-913b-421c6c26614d.git",
-      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_9af8d95a-d630-4d59-913b-421c6c26614d.git",
+      "app_id": "app_3c11679f-84c8-4ef6-bdb1-4fbf76c92a2c",
+      "org_id": "user_b57321f1-eedc-4330-9778-e5c4fcad362e",
+      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_3c11679f-84c8-4ef6-bdb1-4fbf76c92a2c.git",
+      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_3c11679f-84c8-4ef6-bdb1-4fbf76c92a2c.git",
       "name": "homeops-bot",
       "alias": "homeops-bot"
     }
