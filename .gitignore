@@ -5,3 +5,4 @@ __pycache__/
 node_modules/
 data/
 web/dist/
+.clever.json
