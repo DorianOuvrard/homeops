@@ -25,6 +25,32 @@ function formatDate(dateStr: string | null | undefined): string {
   }
 }
 
+const ALLOWED_TAGS = new Set(["b", "strong", "i", "em", "p", "br", "ul", "ol", "li", "h3", "h4"]);
+
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  function clean(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+    const inner = Array.from(el.childNodes).map(clean).join("");
+    if (ALLOWED_TAGS.has(tag)) return `<${tag}>${inner}</${tag}>`;
+    return inner;
+  }
+  return Array.from(doc.body.childNodes).map(clean).join("");
+}
+
+function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+      <span className="text-gray-400 text-xs">{label}</span>
+      <span className="text-gray-700 text-xs font-medium text-right max-w-[60%] truncate">{value}</span>
+    </div>
+  );
+}
+
 export default function ApplianceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -87,40 +113,77 @@ export default function ApplianceDetail() {
     (r) => !r.schedule_date || new Date(r.schedule_date) < new Date()
   ) ?? [];
 
+  const warrantyActive = appliance?.warranty_date && new Date(appliance.warranty_date) >= new Date();
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header with image */}
       <div className="bg-[#1a237e] px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button onClick={() => navigate("/scan")} className="text-white/70 hover:text-white">
           <BackIcon />
         </button>
-        <div>
-          <h1 className="text-white font-bold text-base leading-tight">
+        {appliance?.image_128 && (
+          <img
+            src={appliance.image_128}
+            alt={appliance.name}
+            className="w-10 h-10 rounded-lg object-cover border-2 border-white/20"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-white font-bold text-base leading-tight truncate">
             {appliance?.name ?? "Appareil"}
           </h1>
-          {appliance?.category && (
-            <p className="text-white/60 text-xs">{appliance.category}</p>
-          )}
+          <div className="flex items-center gap-2">
+            {appliance?.category && (
+              <span className="text-white/60 text-xs">{appliance.category}</span>
+            )}
+            {appliance?.model && (
+              <span className="text-white/40 text-xs">{appliance.model}</span>
+            )}
+          </div>
         </div>
+        {warrantyActive && (
+          <span className="shrink-0 bg-green-500/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+            Garantie
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Info card */}
+        {/* Product info card */}
         {appliance && (
           <div className="mx-4 mt-4 bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-xs">Enregistre le</span>
-              <span className="text-gray-700 text-xs font-medium">
-                {formatDate(appliance.create_date)}
-              </span>
-            </div>
+            <h2 className="text-gray-800 font-semibold text-sm mb-2">Fiche produit</h2>
+            <InfoRow label="Modèle" value={appliance.model} />
+            <InfoRow label="N° série" value={appliance.serial_no} />
+            <InfoRow label="Fabricant" value={appliance.vendor} />
+            <InfoRow label="Réf. fournisseur" value={appliance.vendor_ref} />
+            <InfoRow label="Coût" value={appliance.cost ? `${appliance.cost.toFixed(0)} €` : null} />
+            <InfoRow label="Emplacement" value={appliance.location} />
+            <InfoRow label="Date d'acquisition" value={formatDate(appliance.effective_date)} />
+            <InfoRow label="Fin de garantie" value={formatDate(appliance.warranty_date)} />
+            <InfoRow label="Enregistré le" value={formatDate(appliance.create_date)} />
+            {!appliance.model && !appliance.serial_no && !appliance.vendor && !appliance.cost && (
+              <p className="text-gray-300 text-xs italic py-1">Aucun détail renseigné</p>
+            )}
+          </div>
+        )}
+
+        {/* Note / description */}
+        {appliance?.note && (
+          <div className="mx-4 mt-3 bg-white rounded-xl p-4 shadow-sm">
+            <h2 className="text-gray-800 font-semibold text-sm mb-2">Description & entretien</h2>
+            <div
+              className="text-gray-600 text-xs leading-relaxed [&_b]:font-semibold [&_b]:text-gray-700 [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:mt-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:mt-1 [&_li]:mt-0.5 [&_p]:mt-1 first:[&_p]:mt-0"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(appliance.note) }}
+            />
           </div>
         )}
 
         {/* Upcoming maintenance */}
         {upcoming.length > 0 && (
           <div className="mx-4 mt-3">
-            <h2 className="text-gray-700 font-semibold text-sm mb-2">Entretiens a venir</h2>
+            <h2 className="text-gray-700 font-semibold text-sm mb-2">Entretiens à venir</h2>
             <div className="space-y-2">
               {upcoming.map((r) => (
                 <div key={r.id} className="bg-orange-50 border border-orange-100 rounded-xl p-3">

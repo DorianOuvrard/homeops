@@ -66,6 +66,15 @@ export interface Appliance {
   id: number;
   name: string;
   category: string | null;
+  model: string | null;
+  serial_no: string | null;
+  vendor: string | null;
+  vendor_ref: string | null;
+  cost: number | null;
+  warranty_date: string | null;
+  effective_date: string | null;
+  location: string | null;
+  note: string | null;
   create_date: string | null;
   image_128: string | null;
   maintenance_requests: MaintenanceRequest[];
