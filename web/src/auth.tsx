@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     // Auto-login: create anonymous user silently
-    const email = "demo@hodoor.local";
+    const email = "demo@hodoor.dev";
     const password = "hodoor-demo-2026";
     api.auth
       .login(email, password)
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setToken(res.access_token);
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("Auto-login failed:", err))
       .finally(() => setLoading(false));
   }, [token]);
 

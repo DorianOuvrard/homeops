@@ -22,7 +22,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    // Auto-login is handled by AuthProvider; avoid redirect loop since login page is removed
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#faf8f5]">
+        <span className="text-[#8b7355] text-lg">Connexion en cours...</span>
+      </div>
+    );
+  }
   return <>{children}</>;
 }
 
