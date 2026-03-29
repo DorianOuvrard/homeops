@@ -15,8 +15,8 @@ const GROUP_CONFIG: Record<TimeGroup, { label: string; accent: string }> = {
   overdue: { label: "En retard", accent: "text-[#c45d5d]" },
   thisWeek: { label: "Cette semaine", accent: "text-[#d4915e]" },
   thisMonth: { label: "Ce mois-ci", accent: "text-[#d4915e]/70" },
-  later: { label: "Plus tard", accent: "text-[#b5ada5]" },
-  unplanned: { label: "Non planifié", accent: "text-[#b5ada5]" },
+  later: { label: "Plus tard", accent: "text-[#8a837b]" },
+  unplanned: { label: "Non planifié", accent: "text-[#8a837b]" },
 };
 
 const GROUP_ORDER: TimeGroup[] = ["overdue", "thisWeek", "thisMonth", "later", "unplanned"];
@@ -316,7 +316,7 @@ export default function Maintenance() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-[#faf8f5]">
-        <span className="text-[#b5ada5] text-sm">Chargement...</span>
+        <span className="text-[#8a837b] text-sm">Chargement...</span>
       </div>
     );
   }
@@ -326,10 +326,10 @@ export default function Maintenance() {
       <div className="flex flex-col items-center justify-center h-full bg-[#faf8f5] px-8 text-center">
         <HealthRing score={100} />
         <p className="text-[#5a524b] font-semibold text-lg mt-5">Maison au top</p>
-        <p className="text-[#b5ada5] text-sm mt-1.5 max-w-[260px] leading-relaxed">
+        <p className="text-[#8a837b] text-sm mt-1.5 max-w-[260px] leading-relaxed">
           Aucun entretien planifié. Scannez vos appareils puis générez un plan de prévention.
         </p>
-        <div className="mt-8 flex items-center gap-3 text-[#b5ada5]">
+        <div className="mt-8 flex items-center gap-3 text-[#8a837b]">
           <div className="flex items-center gap-1.5 text-xs">
             <Shield className="w-3.5 h-3.5 text-[#7a9e7e]" />
             <span>Préventif</span>
@@ -363,7 +363,7 @@ export default function Maintenance() {
               {weekCount > 0 && (
                 <span className="text-xs text-[#d4915e] font-medium">{weekCount} cette sem.</span>
               )}
-              <span className="text-xs text-[#b5ada5]">{totalUpcoming} au total</span>
+              <span className="text-xs text-[#8a837b]">{totalUpcoming} au total</span>
             </div>
           </div>
         </div>
@@ -401,13 +401,13 @@ export default function Maintenance() {
                             groupKey === "overdue" ? "bg-[#faf0ef]" : "bg-[#f0ece7]"
                           }`}>
                             <Icon className={`w-[18px] h-[18px] ${
-                              groupKey === "overdue" ? "text-[#c45d5d]" : "text-[#b5ada5]"
+                              groupKey === "overdue" ? "text-[#c45d5d]" : "text-[#8a837b]"
                             }`} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-[#3d3833] font-medium text-sm leading-snug">{task.name}</p>
                             {equipName && (
-                              <p className="text-[#b5ada5] text-xs mt-0.5">{equipName}</p>
+                              <p className="text-[#8a837b] text-xs mt-0.5">{equipName}</p>
                             )}
                             <div className="flex items-center gap-2 mt-1.5">
                               {task.schedule_date && (
@@ -430,6 +430,29 @@ export default function Maintenance() {
                                 </span>
                               )}
                             </div>
+                          </div>
+                          {/* Action buttons (alternative to swipe) */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); postpone(task); }}
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-[#8a837b] hover:bg-[#f0ece7] transition-colors"
+                              title="Reporter +7j"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                <path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" opacity="0" /><path d="M12 8v4l2 2" /><circle cx="12" cy="12" r="9" />
+                              </svg>
+                            </button>
+                            {repairedStageId && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); markDone(task.id); }}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-[#7a9e7e] hover:bg-[#e8f0e9] transition-colors"
+                                title="Fait"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                                  <path d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
