@@ -17,6 +17,54 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/appliances", tags=["appliances"])
 
 
+def _build_sensor_context(equipment_id: int, config) -> str:
+    """Build a text summary of live Jeedom sensor data for the LLM context."""
+    from bot.bran.api import _links, _get_jeedom
+    import statistics
+
+    # Reverse lookup: equipment_id -> jeedom_device_id
+    device_id = None
+    for jid, eid in _links.items():
+        if eid == equipment_id:
+            device_id = jid
+            break
+    if device_id is None:
+        return ""
+
+    try:
+        jeedom = _get_jeedom()
+    except Exception:
+        return ""
+
+    cmds = jeedom.get_commands(device_id)
+    numeric_cmds = [c for c in cmds if c.get("type") == "info" and c.get("subType") == "numeric"]
+    if not numeric_cmds:
+        return ""
+
+    lines = ["[Capteurs Jeedom en temps réel]"]
+    for cmd in numeric_cmds:
+        name = cmd.get("name", "")
+        value = cmd.get("currentValue", "")
+        unite = cmd.get("unite", "")
+        lines.append(f"- {name}: {value} {unite}".strip())
+
+        # Fetch history for anomaly detection
+        try:
+            history = jeedom.get_history(cmd["id"])
+            if len(history) > 10:
+                vals = [float(p["value"]) for p in history if p.get("value")]
+                baseline = vals[:int(len(vals) * 0.8)]
+                b_mean = statistics.mean(baseline)
+                b_stdev = statistics.stdev(baseline) if len(baseline) > 1 else 0
+                current = float(value) if value else 0
+                if current > b_mean + 2 * b_stdev:
+                    lines.append(f"  ⚠ ANOMALIE: valeur actuelle ({current} {unite}) très au-dessus de la normale ({b_mean:.1f} ± {b_stdev:.1f} {unite} sur 24h)")
+        except Exception:
+            pass
+
+    return "\n".join(lines)
+
+
 def _list_appliances(odoo) -> list[dict]:
     result = odoo.search_records(
         "maintenance.equipment",
@@ -164,11 +212,24 @@ async def appliance_chat(equipment_id: int, body: ChatMessageRequest, current_us
 
     appliance_name = record.get("name", f"Equipement #{equipment_id}")
 
+    # Fetch live Jeedom metrics if linked
+    sensor_context = ""
+    try:
+        sensor_context = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: _build_sensor_context(equipment_id, config)
+        )
+    except Exception:
+        pass
+
     def _run():
         from bot.llm import get_response
 
         past = history_obj.get(thread_key)
-        context_text = f"[A propos de: {appliance_name}] {body.text}"
+        context_parts = [f"[A propos de: {appliance_name}]"]
+        if sensor_context:
+            context_parts.append(sensor_context)
+        context_parts.append(body.text)
+        context_text = " ".join(context_parts)
         history_obj.add_user(thread_key, body.text)
         reply = get_response(context_text, config, odoo, history=past)
         history_obj.add_assistant(thread_key, reply)
