@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import html
 import io
 import logging
@@ -200,6 +201,17 @@ def _build_telegram_app(config: BotConfig, deps: dict) -> Application:
 
 def main() -> None:
     config = load_config()
+
+    if config.jeedom_mock:
+        from bot.bran.mock import API_KEY as _mock_api_key, PORT as _mock_port, start_in_thread
+        start_in_thread()
+        # Override Jeedom config to point at the embedded mock
+        config = dataclasses.replace(
+            config,
+            jeedom_url=f"http://127.0.0.1:{_mock_port}",
+            jeedom_api_key=_mock_api_key,
+        )
+
     rate_limiter = RateLimiter(max_per_minute=config.rate_limit_per_minute)
     history = ConversationHistory()
     chat_registry = ChatRegistry()

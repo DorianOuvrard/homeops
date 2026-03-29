@@ -37,6 +37,7 @@ class BotConfig:
     # Jeedom (Bran module)
     jeedom_url: str = ""
     jeedom_api_key: str = ""
+    jeedom_mock: bool = False
 
 
 def load_config() -> BotConfig:
@@ -66,4 +67,5 @@ def load_config() -> BotConfig:
         api_port=int(os.environ.get("PORT", os.environ.get("API_PORT", "8000"))),
         jeedom_url=os.environ.get("JEEDOM_URL", "http://localhost:9080"),
         jeedom_api_key=os.environ.get("JEEDOM_API_KEY", ""),
+        jeedom_mock=os.environ.get("JEEDOM_MOCK", "").lower() in ("true", "1", "yes"),
     )
