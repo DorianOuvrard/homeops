@@ -10,7 +10,7 @@ services:
       PASSWORD: odoo
     volumes:
       - odoo-data:/var/lib/odoo
-      - odoo-addons:/mnt/extra-addons
+      - ./odoo_addons:/mnt/extra-addons
     depends_on:
       db:
         condition: service_healthy
