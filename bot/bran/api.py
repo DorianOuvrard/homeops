@@ -107,24 +107,111 @@ def _auto_match(device_name: str, equipment_map: dict[int, str]) -> int | None:
     return None
 
 
-def _create_equipment(device: dict, commands: list[dict], odoo) -> dict:
+def _enrich_from_web(device_name: str, config) -> dict:
+    """Search web for product specs to enrich the equipment record."""
+    if not config.tavily_api_key:
+        return {}
+    try:
+        from bot.search import search_product_docs
+        results = search_product_docs(config.tavily_api_key, device_name)
+        if not results.get("results"):
+            return {}
+        # Extract useful info from search results
+        combined = " ".join(r.get("content", "") for r in results["results"][:3])
+        # Build note with web findings
+        source_links = [f'<li><a href="{r["url"]}">{r["title"]}</a></li>' for r in results["results"][:2]]
+        enrichment: dict = {}
+        if source_links:
+            enrichment["web_note"] = f"<b>Documentation trouvée</b><ul>{''.join(source_links)}</ul>"
+        return enrichment
+    except Exception as exc:
+        logger.debug("Web enrichment failed for %s: %s", device_name, exc)
+        return {}
+
+
+def _find_or_create_vendor(vendor_name: str, odoo) -> int | None:
+    """Search or create a res.partner for the manufacturer."""
+    if not vendor_name:
+        return None
+    result = odoo.search_records(
+        "res.partner",
+        domain=[["name", "ilike", vendor_name], ["is_company", "=", True]],
+        fields=["id"],
+        limit=1,
+    )
+    records = result.get("records", [])
+    if records:
+        return records[0]["id"]
+    created = odoo.create_record("res.partner", {"name": vendor_name, "is_company": True})
+    return created.get("record", {}).get("id")
+
+
+def _create_equipment(device: dict, commands: list[dict], odoo, config=None) -> dict:
     """Create an Odoo maintenance.equipment from a Jeedom device."""
+    conf = device.get("configuration", {})
+    manufacturer = conf.get("manufacturer", "")
+    model_ref = conf.get("model", "")
+    serial = conf.get("serial", "")
+    year = conf.get("year")
+    price = conf.get("estimated_price")
+
+    # Build a rich name: "Marque Modèle" or device name
     device_name = device.get("name", "Appareil inconnu")
+    if manufacturer and model_ref:
+        full_name = f"{device_name} ({manufacturer} {model_ref})"
+    else:
+        full_name = device_name
+
     room = ""
     if isinstance(device.get("object"), dict):
         room = device["object"].get("name", "")
 
+    # Build HTML note
     sensor_lines = []
     for cmd in commands:
         if cmd.get("type") == "info":
             val = cmd.get("currentValue", "")
             unite = cmd.get("unite", "")
             sensor_lines.append(f"<li><b>{cmd.get('name', '')}</b>: {val} {unite}</li>")
-    note_html = "<p>Importé automatiquement par Bran</p>"
-    if sensor_lines:
-        note_html += f"<ul>{''.join(sensor_lines)}</ul>"
 
-    values: dict = {"name": device_name, "location": room, "note": note_html}
+    note_parts = []
+    if manufacturer or model_ref:
+        note_parts.append(f"<b>{manufacturer} {model_ref}</b>")
+    note_parts.append("<p>Importé automatiquement par Bran</p>")
+    if sensor_lines:
+        note_parts.append(f"<b>Capteurs</b><ul>{''.join(sensor_lines)}</ul>")
+
+    # Web enrichment for product specs
+    if config and (manufacturer or model_ref):
+        enrichment = _enrich_from_web(f"{manufacturer} {model_ref}".strip(), config)
+        if enrichment.get("web_note"):
+            note_parts.append(enrichment["web_note"])
+
+    note_html = "\n".join(note_parts)
+
+    values: dict = {
+        "name": full_name,
+        "location": room,
+        "note": note_html,
+    }
+
+    if model_ref:
+        values["model"] = model_ref
+    if serial:
+        values["serial_no"] = serial
+    if price:
+        values["cost"] = price
+
+    # Warranty: purchase year + 2 years
+    if year:
+        values["effective_date"] = f"{year}-01-01"
+        values["warranty_date"] = f"{year + 2}-01-01"
+
+    # Vendor
+    vendor_id = _find_or_create_vendor(manufacturer, odoo)
+    if vendor_id:
+        values["partner_id"] = vendor_id
+
     category_id = _infer_category_id(device_name, odoo)
     if category_id:
         values["category_id"] = category_id
@@ -132,22 +219,51 @@ def _create_equipment(device: dict, commands: list[dict], odoo) -> dict:
     return odoo.create_record("maintenance.equipment", values)
 
 
-def _sync_device(device: dict, commands: list[dict], equipment_map: dict[int, str], odoo) -> tuple[int, bool]:
+def _enrich_existing(equipment_id: int, device: dict, odoo) -> None:
+    """Update an existing Odoo equipment with Jeedom metadata if fields are empty."""
+    conf = device.get("configuration", {})
+    if not conf:
+        return
+    updates: dict = {}
+    if conf.get("model"):
+        updates["model"] = conf["model"]
+    if conf.get("serial"):
+        updates["serial_no"] = conf["serial"]
+    if conf.get("estimated_price"):
+        updates["cost"] = conf["estimated_price"]
+    if conf.get("year"):
+        updates["effective_date"] = f"{conf['year']}-01-01"
+        updates["warranty_date"] = f"{conf['year'] + 2}-01-01"
+    if conf.get("manufacturer"):
+        vendor_id = _find_or_create_vendor(conf["manufacturer"], odoo)
+        if vendor_id:
+            updates["partner_id"] = vendor_id
+    if updates:
+        try:
+            odoo.update_record("maintenance.equipment", equipment_id, updates)
+            logger.info("Bran: enriched equipment %d with Jeedom metadata", equipment_id)
+        except Exception as exc:
+            logger.warning("Bran: failed to enrich equipment %d: %s", equipment_id, exc)
+
+
+def _sync_device(device: dict, commands: list[dict], equipment_map: dict[int, str], odoo, config=None) -> tuple[int, bool]:
     """Match or create equipment for a device. Returns (equipment_id, is_new)."""
     device_id = device["id"]
 
     # Already linked from a previous scan
     if device_id in _links and _links[device_id] in equipment_map:
+        _enrich_existing(_links[device_id], device, odoo)
         return _links[device_id], False
 
     # Try name-based match
     matched = _auto_match(device.get("name", ""), equipment_map)
     if matched is not None:
         _links[device_id] = matched
+        _enrich_existing(matched, device, odoo)
         return matched, False
 
-    # No match: create new equipment
-    result = _create_equipment(device, commands, odoo)
+    # No match: create new equipment (with web enrichment)
+    result = _create_equipment(device, commands, odoo, config=config)
     eq_id = result["record"]["id"]
     eq_name = result["record"]["display_name"]
     _links[device_id] = eq_id
@@ -217,6 +333,7 @@ async def scan_and_sync(current_user: CurrentUser):
     jeedom = _get_jeedom()
     deps = get_deps()
     odoo = deps["odoo"]
+    config = deps["config"]
     loop = asyncio.get_event_loop()
 
     try:
@@ -236,7 +353,7 @@ async def scan_and_sync(current_user: CurrentUser):
             cmds = []
         try:
             _, is_new = await loop.run_in_executor(
-                None, lambda d=device, c=cmds: _sync_device(d, c, equipment_map, odoo)
+                None, lambda d=device, c=cmds: _sync_device(d, c, equipment_map, odoo, config=config)
             )
         except Exception as exc:
             logger.warning("Bran: sync failed for device %d: %s", device["id"], exc)

@@ -24,6 +24,13 @@ DEVICES = [
         "isEnable": 1,
         "isVisible": 1,
         "object": {"id": 1, "name": "Salon"},
+        "configuration": {
+            "manufacturer": "Daikin",
+            "model": "FTXM35R",
+            "serial": "2450781-03",
+            "year": 2024,
+            "estimated_price": 1290,
+        },
         "commands": [
             {"id": 101, "name": "Température", "type": "info", "subType": "numeric",
              "unite": "°C", "base_value": 22.5, "variance": 1.0},
@@ -40,6 +47,13 @@ DEVICES = [
         "isEnable": 1,
         "isVisible": 1,
         "object": {"id": 2, "name": "Buanderie"},
+        "configuration": {
+            "manufacturer": "Samsung",
+            "model": "WW90T554DAW",
+            "serial": "Y28G900123",
+            "year": 2023,
+            "estimated_price": 649,
+        },
         "commands": [
             {"id": 201, "name": "Consommation", "type": "info", "subType": "numeric",
              "unite": "W", "base_value": 45, "variance": 20},
@@ -56,6 +70,13 @@ DEVICES = [
         "isEnable": 1,
         "isVisible": 1,
         "object": {"id": 3, "name": "Cuisine"},
+        "configuration": {
+            "manufacturer": "Liebherr",
+            "model": "CNef 4815",
+            "serial": "51.692.847.4",
+            "year": 2022,
+            "estimated_price": 899,
+        },
         "commands": [
             {"id": 301, "name": "Température", "type": "info", "subType": "numeric",
              "unite": "°C", "base_value": 4.2, "variance": 0.5},
@@ -72,6 +93,13 @@ DEVICES = [
         "isEnable": 1,
         "isVisible": 1,
         "object": {"id": 4, "name": "Garage"},
+        "configuration": {
+            "manufacturer": "Atlantic",
+            "model": "Zeneo 200L",
+            "serial": "ATL-2024-08812",
+            "year": 2024,
+            "estimated_price": 459,
+        },
         "commands": [
             {"id": 401, "name": "Température eau", "type": "info", "subType": "numeric",
              "unite": "°C", "base_value": 55.0, "variance": 3.0},
@@ -86,6 +114,13 @@ DEVICES = [
         "isEnable": 1,
         "isVisible": 1,
         "object": {"id": 5, "name": "Extérieur"},
+        "configuration": {
+            "manufacturer": "Somfy",
+            "model": "Elixo 500 3S RTS",
+            "serial": "5121478-A",
+            "year": 2021,
+            "estimated_price": 750,
+        },
         "commands": [
             {"id": 501, "name": "État", "type": "info", "subType": "binary",
              "unite": "", "base_value": 0, "variance": 0},
@@ -153,6 +188,7 @@ def build_device_response(device: dict, include_cmds: bool = False) -> dict:
         "isEnable": device["isEnable"],
         "isVisible": device["isVisible"],
         "object": device.get("object"),
+        "configuration": device.get("configuration", {}),
     }
     if include_cmds:
         result["cmds"] = [
