@@ -1,11 +1,7 @@
-// Service worker for HODOOR PWA - offline shell caching
-const CACHE_NAME = "hodoor-v2";
-const SHELL_ASSETS = ["/", "/index.html", "/manifest.json"];
+// Service worker for HODOOR PWA
+const CACHE_NAME = "hodoor-v3";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -23,16 +19,30 @@ self.addEventListener("fetch", (event) => {
   if (event.request.url.includes("/api/")) {
     return;
   }
-  // Navigation requests: serve shell from cache, fall back to network
+  // Navigation requests: network first, cache fallback (avoids stale index.html)
   if (event.request.mode === "navigate") {
     event.respondWith(
-      caches.match("/index.html").then((cached) => cached || fetch(event.request))
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", clone));
+          return response;
+        })
+        .catch(() => caches.match("/index.html"))
     );
     return;
   }
-  // Static assets: cache first
+  // Hashed assets (Vite): network first, cache for offline
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 
