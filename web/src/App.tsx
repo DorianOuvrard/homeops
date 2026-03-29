@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth";
 import Login from "./pages/Login";
 import Chat from "./pages/Chat";
@@ -42,6 +42,29 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PersistentTabs() {
+  const path = useLocation().pathname;
+
+  return (
+    <>
+      {/* Main tabs stay mounted, hidden via CSS to preserve state */}
+      <div className="h-full" style={{ display: path === "/scan" ? undefined : "none" }}>
+        <Scan />
+      </div>
+      <div className="h-full" style={{ display: path === "/chat" ? undefined : "none" }}>
+        <Chat />
+      </div>
+      <div className="h-full" style={{ display: path === "/settings" ? undefined : "none" }}>
+        <Settings />
+      </div>
+      {/* Detail routes mount/unmount normally */}
+      <Routes>
+        <Route path="/scan/:id" element={<ApplianceDetail />} />
+      </Routes>
+    </>
+  );
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -60,39 +83,13 @@ function AppRoutes() {
         element={user ? <Navigate to="/scan" replace /> : <Login />}
       />
       <Route
-        path="/chat"
+        path="/*"
         element={
           <AuthGuard>
-            <AppLayout><Chat /></AppLayout>
+            <AppLayout><PersistentTabs /></AppLayout>
           </AuthGuard>
         }
       />
-      <Route
-        path="/scan"
-        element={
-          <AuthGuard>
-            <AppLayout><Scan /></AppLayout>
-          </AuthGuard>
-        }
-      />
-      <Route
-        path="/scan/:id"
-        element={
-          <AuthGuard>
-            <AppLayout><ApplianceDetail /></AppLayout>
-          </AuthGuard>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <AuthGuard>
-            <AppLayout><Settings /></AppLayout>
-          </AuthGuard>
-        }
-      />
-      <Route path="/" element={<Navigate to={user ? "/scan" : "/login"} replace />} />
-      <Route path="*" element={<Navigate to={user ? "/scan" : "/login"} replace />} />
     </Routes>
   );
 }
