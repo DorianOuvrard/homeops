@@ -62,26 +62,26 @@ body {
   position: absolute;
   width: 24px;
   height: 24px;
-  border-color: #c45d3e;
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 .viewfinder-corner-tl {
   top: 0; left: 0;
   border-top: 3px solid; border-left: 3px solid;
-  border-color: #c45d3e; border-radius: 4px 0 0 0;
+  border-color: rgba(255, 255, 255, 0.7); border-radius: 4px 0 0 0;
 }
 .viewfinder-corner-tr {
   top: 0; right: 0;
   border-top: 3px solid; border-right: 3px solid;
-  border-color: #c45d3e; border-radius: 0 4px 0 0;
+  border-color: rgba(255, 255, 255, 0.7); border-radius: 0 4px 0 0;
 }
 .viewfinder-corner-bl {
   bottom: 0; left: 0;
   border-bottom: 3px solid; border-left: 3px solid;
-  border-color: #c45d3e; border-radius: 0 0 0 4px;
+  border-color: rgba(255, 255, 255, 0.7); border-radius: 0 0 0 4px;
 }
 .viewfinder-corner-br {
   bottom: 0; right: 0;
   border-bottom: 3px solid; border-right: 3px solid;
-  border-color: #c45d3e; border-radius: 0 0 4px 0;
+  border-color: rgba(255, 255, 255, 0.7); border-radius: 0 0 4px 0;
 }

@@ -150,7 +150,7 @@ export default function Login() {
 
       {/* Tagline at bottom */}
       <div className="py-6 text-center">
-        <p className="text-[#b5ada5] text-[10px] font-semibold tracking-[0.2em] uppercase italic">
+        <p className="text-[#8a8078] text-[10px] font-semibold tracking-[0.2em] uppercase italic">
           Réparer plutôt que tout jeter.
         </p>
       </div>

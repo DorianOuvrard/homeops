@@ -46,7 +46,7 @@ export default function Settings() {
             </div>
             <div className="min-w-0">
               <p className="text-[#3d3833] font-semibold text-sm truncate">{user?.email}</p>
-              <p className="text-gray-400 text-xs mt-0.5">Compte HODOOR</p>
+              <p className="text-gray-400 text-xs mt-0.5">Compte Hodoor</p>
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function Settings() {
         {/* Logout */}
         <button
           onClick={logout}
-          className="w-full bg-white rounded-2xl shadow-sm px-5 py-4 text-left text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+          className="w-full bg-white rounded-2xl shadow-sm px-5 py-4 text-left text-[#c45d5d] text-sm font-medium hover:bg-[#faf0ef] transition-colors"
         >
           Se déconnecter
         </button>
