@@ -92,15 +92,11 @@ export default function Maintenance() {
         setStages(stageList);
         setMaintenanceBadge(countThisWeekTasks(taskList));
       })
-      .catch(() => {})
+      .catch((err) => console.error("[Maintenance] fetch error:", err))
       .finally(() => setLoading(false));
   }, [setMaintenanceBadge]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Re-fetch when tab becomes visible
+  // Only fetch when tab becomes visible (persistent tab, no need to fetch while hidden)
   useEffect(() => {
     if (location.pathname === "/maintenance") {
       fetchData();
