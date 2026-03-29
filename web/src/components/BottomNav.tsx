@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAppContext } from "../AppContext";
 
 function HomeIcon({ filled }: { filled?: boolean }) {
   if (filled) {
@@ -31,6 +32,21 @@ function ChatIcon({ filled }: { filled?: boolean }) {
   );
 }
 
+function MaintenanceIcon({ filled }: { filled?: boolean }) {
+  if (filled) {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-6 h-6">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ProfileIcon({ filled }: { filled?: boolean }) {
   if (filled) {
     return (
@@ -48,6 +64,8 @@ function ProfileIcon({ filled }: { filled?: boolean }) {
 }
 
 export default function BottomNav() {
+  const { maintenanceBadge } = useAppContext();
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
       isActive ? "text-[#1a237e]" : "text-gray-400"
@@ -69,6 +87,21 @@ export default function BottomNav() {
             <>
               <ChatIcon filled={isActive} />
               <span>CHAT</span>
+            </>
+          )}
+        </NavLink>
+        <NavLink to="/maintenance" className={linkClass}>
+          {({ isActive }) => (
+            <>
+              <div className="relative">
+                <MaintenanceIcon filled={isActive} />
+                {maintenanceBadge > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-[#f57c00] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {maintenanceBadge > 9 ? "9+" : maintenanceBadge}
+                  </span>
+                )}
+              </div>
+              <span>ENTRETIEN</span>
             </>
           )}
         </NavLink>

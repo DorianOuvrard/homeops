@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type ChatMessage } from "../api";
+import { useAppContext } from "../AppContext";
 import MessageBubble from "../components/MessageBubble";
 import LoadingDots from "../components/LoadingDots";
 import MicButton from "../components/MicButton";
@@ -29,6 +30,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const speechBaseRef = useRef("");
   const hodorTimeoutRef = useRef<number | null>(null);
+  const { pendingChatMessage, setPendingChatMessage } = useAppContext();
 
   useEffect(() => {
     api.chat
@@ -96,6 +98,14 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
       setLoading(false);
     }
   };
+
+  // Auto-send pending message from Scan page "Generate plan" button
+  useEffect(() => {
+    if (visible && pendingChatMessage && !loading && !initialLoad) {
+      sendText(pendingChatMessage);
+      setPendingChatMessage(null);
+    }
+  }, [visible, pendingChatMessage, loading, initialLoad]);
 
   const sendPhoto = async (file: File) => {
     const imageUrl = URL.createObjectURL(file);

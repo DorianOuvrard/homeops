@@ -89,6 +89,23 @@ export interface MaintenanceRequest {
   state?: string;
 }
 
+export interface MaintenanceTask {
+  id: number;
+  name: string;
+  description?: string;
+  schedule_date?: string;
+  maintenance_type?: string;
+  stage_id?: number;
+  stage_name?: string;
+  equipment_id?: number;
+  equipment_name?: string;
+}
+
+export interface MaintenanceStage {
+  id: number;
+  name: string;
+}
+
 export interface PushSubscriptionPayload {
   endpoint: string;
   keys: {
@@ -139,6 +156,15 @@ export const api = {
       }),
     chatHistory: (id: number) =>
       request<ChatMessage[]>(`/appliances/${id}/chat`),
+  },
+  maintenance: {
+    list: () => request<MaintenanceTask[]>("/maintenance"),
+    update: (id: number, data: { schedule_date?: string; stage_id?: number }) =>
+      request<MaintenanceTask>(`/maintenance/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    stages: () => request<MaintenanceStage[]>("/maintenance/stages"),
   },
   push: {
     getVapidPublicKey: () => request<{ public_key: string }>("/push/vapid-public-key"),

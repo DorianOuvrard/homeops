@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth";
+import { AppProvider } from "./AppContext";
 import Login from "./pages/Login";
 import Chat from "./pages/Chat";
 import Scan from "./pages/Scan";
+import Maintenance from "./pages/Maintenance";
 import Settings from "./pages/Settings";
 import ApplianceDetail from "./pages/ApplianceDetail";
 import Header from "./components/Header";
@@ -34,11 +36,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex-1 overflow-hidden">{children}</div>
-      <BottomNav />
-    </div>
+    <AppProvider>
+      <div className="flex flex-col h-screen">
+        <Header />
+        <div className="flex-1 overflow-hidden">{children}</div>
+        <BottomNav />
+      </div>
+    </AppProvider>
   );
 }
 
@@ -53,6 +57,9 @@ function PersistentTabs() {
       </div>
       <div className="h-full" style={{ display: path === "/chat" ? undefined : "none" }}>
         <Chat visible={path === "/chat"} />
+      </div>
+      <div className="h-full" style={{ display: path === "/maintenance" ? undefined : "none" }}>
+        <Maintenance />
       </div>
       <div className="h-full" style={{ display: path === "/settings" ? undefined : "none" }}>
         <Settings />

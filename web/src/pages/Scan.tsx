@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api, type Appliance, type ChatMessage } from "../api";
+import { useAppContext } from "../AppContext";
 import ApplianceCard from "../components/ApplianceCard";
 import MessageBubble from "../components/MessageBubble";
 import LoadingDots from "../components/LoadingDots";
@@ -21,6 +22,8 @@ export default function Scan() {
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { setPendingChatMessage } = useAppContext();
 
   const refreshAppliances = () => {
     api.appliances
@@ -337,6 +340,24 @@ export default function Scan() {
           )}
         </div>
       </div>
+
+      {/* Floating "Generate plan" button */}
+      {appliances.length > 0 && messages.length === 0 && !tipOpen && (
+        <div className="absolute bottom-2 left-3 right-3 z-20">
+          <button
+            onClick={() => {
+              setPendingChatMessage("J'ai fini, fais le récap et le plan de prévention");
+              navigate("/chat");
+            }}
+            className="w-full bg-[#1a237e] text-white rounded-xl py-3.5 font-semibold text-sm shadow-lg flex items-center justify-center gap-2 hover:bg-[#283593] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+            </svg>
+            Générer mon plan d'entretien
+          </button>
+        </div>
+      )}
 
       {/* Floating Pro tip */}
       {tipOpen && (
