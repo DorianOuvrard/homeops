@@ -56,6 +56,28 @@ class ApplianceResponse(BaseModel):
     maintenance_requests: list[dict] = []
 
 
+class MaintenanceTaskResponse(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    schedule_date: str | None = None
+    maintenance_type: str | None = None
+    stage_id: int | None = None
+    stage_name: str | None = None
+    equipment_id: int | None = None
+    equipment_name: str | None = None
+
+
+class MaintenanceUpdateRequest(BaseModel):
+    schedule_date: str | None = None
+    stage_id: int | None = None
+
+
+class MaintenanceStageResponse(BaseModel):
+    id: int
+    name: str
+
+
 class PushSubscriptionKeys(BaseModel):
     p256dh: str
     auth: str
