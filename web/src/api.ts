@@ -124,12 +124,32 @@ export interface BranDevice {
   commands: BranDeviceCommand[];
   linked_equipment_id?: number;
   linked_equipment_name?: string;
+  is_new?: boolean;
 }
 
 export interface BranStatus {
   connected: boolean;
   device_count: number;
   jeedom_url?: string;
+}
+
+export interface BranMetricPoint {
+  datetime: string;
+  value: number;
+}
+
+export interface BranMetricSeries {
+  cmd_id: number;
+  name: string;
+  unite?: string;
+  current?: number;
+  points: BranMetricPoint[];
+}
+
+export interface BranMetrics {
+  equipment_id: number;
+  device_name: string;
+  series: BranMetricSeries[];
 }
 
 export interface PushSubscriptionPayload {
@@ -182,6 +202,14 @@ export const api = {
       }),
     chatHistory: (id: number) =>
       request<ChatMessage[]>(`/appliances/${id}/chat`),
+    uploadPhoto: (id: number, photo: File) => {
+      const form = new FormData();
+      form.append("photo", photo);
+      return request<{ ok: boolean; image_128: string }>(`/appliances/${id}/photo`, {
+        method: "POST",
+        body: form,
+      });
+    },
   },
   maintenance: {
     list: () => request<MaintenanceTask[]>("/maintenance"),
@@ -194,19 +222,10 @@ export const api = {
   },
   bran: {
     status: () => request<BranStatus>("/bran/status"),
+    scan: () => request<BranDevice[]>("/bran/scan", { method: "POST" }),
     devices: () => request<BranDevice[]>("/bran/devices"),
-    link: (jeedomDeviceId: number, equipmentId: number) =>
-      request<{ ok: boolean }>(`/bran/link/${jeedomDeviceId}`, {
-        method: "POST",
-        body: JSON.stringify({ equipment_id: equipmentId }),
-      }),
-    unlink: (jeedomDeviceId: number) =>
-      request<{ ok: boolean }>(`/bran/link/${jeedomDeviceId}`, { method: "DELETE" }),
-    import: (jeedomDeviceId: number) =>
-      request<{ ok: boolean; equipment_id: number; equipment_name: string }>(
-        `/bran/import/${jeedomDeviceId}`,
-        { method: "POST" },
-      ),
+    metrics: (equipmentId: number) =>
+      request<BranMetrics>(`/bran/metrics/${equipmentId}`),
   },
   push: {
     getVapidPublicKey: () => request<{ public_key: string }>("/push/vapid-public-key"),
