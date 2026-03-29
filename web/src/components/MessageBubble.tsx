@@ -46,15 +46,15 @@ function PlayButton({ audioUrl }: { audioUrl: string }) {
   return (
     <button
       onClick={toggle}
-      className="mt-1 p-1.5 rounded-full hover:bg-[#f57c00]/20 transition-colors"
+      className="mt-1 p-1.5 rounded-full hover:bg-[#d4915e]/20 transition-colors"
       title={playing ? "Arrêter" : "Écouter"}
     >
       {playing ? (
-        <svg viewBox="0 0 24 24" fill="#f57c00" className="w-4 h-4">
+        <svg viewBox="0 0 24 24" fill="#d4915e" className="w-4 h-4">
           <path d="M6 6h4v12H6zm8 0h4v12h-4z" />
         </svg>
       ) : (
-        <svg viewBox="0 0 24 24" fill="#f57c00" className="w-4 h-4">
+        <svg viewBox="0 0 24 24" fill="#d4915e" className="w-4 h-4">
           <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
         </svg>
       )}
@@ -88,8 +88,8 @@ export default function MessageBubble({ role, content, imageUrl, audioUrl }: Mes
           <div
             className={`px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap ${
               isUser
-                ? "bg-[#1a237e] text-white rounded-2xl rounded-br-sm"
-                : "bg-[#fef0e4] text-gray-800 rounded-2xl rounded-bl-sm border-l-3 border-[#f57c00]"
+                ? "bg-[#c45d3e] text-white rounded-2xl rounded-br-sm"
+                : "bg-[#f5efe8] text-[#3d3833] rounded-2xl rounded-bl-sm border-l-3 border-[#d4915e]"
             }`}
           >
             {displayText}
@@ -101,7 +101,7 @@ export default function MessageBubble({ role, content, imageUrl, audioUrl }: Mes
 
         {/* Timestamp */}
         <div className={`text-[10px] mt-1.5 px-1 font-medium tracking-wide ${
-          isUser ? "text-gray-400 text-right" : "text-[#f57c00]"
+          isUser ? "text-gray-400 text-right" : "text-[#d4915e]"
         }`}>
           {isUser ? `VOUS · ${time}` : `HODOOR · ${time}`}
         </div>

@@ -12,11 +12,11 @@ import {
 type TimeGroup = "overdue" | "thisWeek" | "thisMonth" | "later" | "unplanned";
 
 const GROUP_CONFIG: Record<TimeGroup, { label: string; accent: string }> = {
-  overdue: { label: "En retard", accent: "text-red-500" },
-  thisWeek: { label: "Cette semaine", accent: "text-[#f57c00]" },
-  thisMonth: { label: "Ce mois-ci", accent: "text-[#f57c00]/70" },
-  later: { label: "Plus tard", accent: "text-gray-400" },
-  unplanned: { label: "Non planifié", accent: "text-gray-400" },
+  overdue: { label: "En retard", accent: "text-[#c45d5d]" },
+  thisWeek: { label: "Cette semaine", accent: "text-[#d4915e]" },
+  thisMonth: { label: "Ce mois-ci", accent: "text-[#d4915e]/70" },
+  later: { label: "Plus tard", accent: "text-[#b5ada5]" },
+  unplanned: { label: "Non planifié", accent: "text-[#b5ada5]" },
 };
 
 const GROUP_ORDER: TimeGroup[] = ["overdue", "thisWeek", "thisMonth", "later", "unplanned"];
@@ -127,9 +127,9 @@ function computeHealthScore(tasks: MaintenanceTask[]): number {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 80) return "#10b981"; // green
-  if (score >= 50) return "#f59e0b"; // amber
-  return "#ef4444"; // red
+  if (score >= 80) return "#7a9e7e"; // sauge
+  if (score >= 50) return "#d4915e"; // warm amber
+  return "#c45d5d"; // warm red
 }
 
 function getScoreMessage(score: number): string {
@@ -149,7 +149,7 @@ function HealthRing({ score }: { score: number }) {
   return (
     <div className="relative w-24 h-24">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="#f3f4f6" strokeWidth={stroke} />
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#f0ece7" strokeWidth={stroke} />
         <circle
           cx="50" cy="50" r={radius} fill="none"
           stroke={color} strokeWidth={stroke}
@@ -160,7 +160,7 @@ function HealthRing({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-gray-900">{score}</span>
+        <span className="text-2xl font-bold text-[#3d3833]">{score}</span>
       </div>
     </div>
   );
@@ -225,10 +225,10 @@ function SwipeCard({
     <div className="relative overflow-hidden rounded-xl">
       {/* Background actions revealed on swipe */}
       <div className="absolute inset-0 flex">
-        <div className="flex-1 bg-green-500 flex items-center pl-5">
+        <div className="flex-1 bg-[#7a9e7e] flex items-center pl-5">
           <span className="text-white text-xs font-semibold">Fait</span>
         </div>
-        <div className="flex-1 bg-[#f57c00] flex items-center justify-end pr-5">
+        <div className="flex-1 bg-[#d4915e] flex items-center justify-end pr-5">
           <span className="text-white text-xs font-semibold">+7 jours</span>
         </div>
       </div>
@@ -311,18 +311,18 @@ export default function Maintenance() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <span className="text-gray-400 text-sm">Chargement...</span>
+      <div className="flex items-center justify-center h-full bg-[#faf8f5]">
+        <span className="text-[#b5ada5] text-sm">Chargement...</span>
       </div>
     );
   }
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-50 px-8 text-center">
+      <div className="flex flex-col items-center justify-center h-full bg-[#faf8f5] px-8 text-center">
         <HealthRing score={100} />
-        <p className="text-gray-700 font-semibold text-base mt-4">Tout est en ordre</p>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="text-[#5a524b] font-semibold text-base mt-4">Tout est en ordre</p>
+        <p className="text-[#b5ada5] text-sm mt-1">
           Aucun entretien en attente. Votre maison est au top.
         </p>
       </div>
@@ -334,21 +334,21 @@ export default function Maintenance() {
   const totalUpcoming = tasks.length;
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50">
+    <div className="h-full overflow-y-auto bg-[#faf8f5]">
       <div className="px-4 pt-5 pb-4 space-y-5">
         {/* Health score header */}
-        <div className="flex items-center gap-5 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-5 bg-white rounded-2xl p-4 shadow-md">
           <HealthRing score={healthScore} />
           <div className="flex-1 min-w-0">
-            <p className="text-gray-900 font-semibold text-sm">{getScoreMessage(healthScore)}</p>
+            <p className="text-[#3d3833] font-semibold text-sm">{getScoreMessage(healthScore)}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
               {overdueCount > 0 && (
-                <span className="text-xs text-red-500 font-medium">{overdueCount} en retard</span>
+                <span className="text-xs text-[#c45d5d] font-medium">{overdueCount} en retard</span>
               )}
               {weekCount > 0 && (
-                <span className="text-xs text-[#f57c00] font-medium">{weekCount} cette sem.</span>
+                <span className="text-xs text-[#d4915e] font-medium">{weekCount} cette sem.</span>
               )}
-              <span className="text-xs text-gray-400">{totalUpcoming} au total</span>
+              <span className="text-xs text-[#b5ada5]">{totalUpcoming} au total</span>
             </div>
           </div>
         </div>
@@ -377,27 +377,27 @@ export default function Maintenance() {
                       canSwipeRight={!!repairedStageId}
                     >
                       <div
-                        className={`bg-white p-4 shadow-sm border select-none ${
-                          groupKey === "overdue" ? "border-red-100" : "border-gray-100"
+                        className={`bg-white p-4 shadow-sm rounded-2xl select-none ${
+                          groupKey === "overdue" ? "border border-[#f0d5d5] bg-[#faf0ef]" : ""
                         }`}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                            groupKey === "overdue" ? "bg-red-50" : "bg-gray-50"
+                            groupKey === "overdue" ? "bg-[#faf0ef]" : "bg-[#f0ece7]"
                           }`}>
                             <Icon className={`w-[18px] h-[18px] ${
-                              groupKey === "overdue" ? "text-red-400" : "text-gray-400"
+                              groupKey === "overdue" ? "text-[#c45d5d]" : "text-[#b5ada5]"
                             }`} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-gray-900 font-medium text-sm leading-snug">{task.name}</p>
+                            <p className="text-[#3d3833] font-medium text-sm leading-snug">{task.name}</p>
                             {equipName && (
-                              <p className="text-gray-400 text-xs mt-0.5">{equipName}</p>
+                              <p className="text-[#b5ada5] text-xs mt-0.5">{equipName}</p>
                             )}
                             <div className="flex items-center gap-2 mt-1.5">
                               {task.schedule_date && (
                                 <span className={`text-xs font-medium ${
-                                  groupKey === "overdue" ? "text-red-500" : "text-[#f57c00]"
+                                  groupKey === "overdue" ? "text-[#c45d5d]" : "text-[#d4915e]"
                                 }`}>
                                   {formatRelative(task.schedule_date)}
                                 </span>
@@ -405,8 +405,8 @@ export default function Maintenance() {
                               {task.maintenance_type && (
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
                                   task.maintenance_type === "preventive"
-                                    ? "bg-blue-50 text-blue-500"
-                                    : "bg-orange-50 text-orange-500"
+                                    ? "bg-[#e8f0e9] text-[#5a8a60]"
+                                    : "bg-[#f0ded8] text-[#c45d3e]"
                                 }`}>
                                   {task.maintenance_type === "preventive"
                                     ? <><Shield className="w-2.5 h-2.5" />préventif</>

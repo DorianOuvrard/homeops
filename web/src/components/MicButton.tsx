@@ -158,7 +158,7 @@ export default function MicButton({
       className={`p-2 transition-colors disabled:opacity-40 ${
         listening
           ? "text-red-500 animate-pulse"
-          : "text-gray-400 hover:text-[#f57c00]"
+          : "text-gray-400 hover:text-[#d4915e]"
       }`}
       title={listening ? "Arreter l'ecoute" : "Dicter un message"}
     >

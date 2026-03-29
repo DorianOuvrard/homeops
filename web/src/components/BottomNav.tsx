@@ -84,11 +84,11 @@ export default function BottomNav() {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-      isActive ? "text-[#1a237e]" : "text-gray-400"
+      isActive ? "text-[#c45d3e]" : "text-gray-400"
     }`;
 
   return (
-    <nav className="bg-white border-t border-gray-200 pb-safe shrink-0">
+    <nav className="bg-white border-t border-[#f0ece7] pb-safe shrink-0">
       <div className="flex justify-around items-center py-2 px-4">
         <NavLink to="/scan" className={linkClass}>
           {({ isActive }) => (
@@ -112,7 +112,7 @@ export default function BottomNav() {
               <div className="relative">
                 <MaintenanceIcon filled={isActive} />
                 {maintenanceBadge > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#f57c00] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-2 bg-[#c45d3e] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                     {maintenanceBadge > 9 ? "9+" : maintenanceBadge}
                   </span>
                 )}

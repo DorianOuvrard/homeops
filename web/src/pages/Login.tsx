@@ -33,10 +33,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#f57c00] relative">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#faf8f5] via-[#f0ded8] to-[#e8f0e9] relative">
       {/* Header bar */}
-      <div className="bg-[#1a237e] py-3 text-center">
-        <h1 className="text-white font-black text-lg tracking-wider">HODOOR</h1>
+      <div className="bg-transparent py-3 text-center">
+        <h1 className="text-[#c45d3e] font-black text-lg tracking-wider">HODOOR</h1>
       </div>
 
       {/* Floating card */}
@@ -59,7 +59,7 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nom@entreprise.fr"
                   required
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a237e] focus:bg-white transition"
+                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#c45d3e] focus:bg-white transition"
                 />
               </div>
             </div>
@@ -71,7 +71,7 @@ export default function Login() {
                 {mode === "login" && (
                   <button
                     type="button"
-                    className="text-[11px] text-[#1a237e] font-bold hover:underline"
+                    className="text-[11px] text-[#c45d3e] font-bold hover:underline"
                     onClick={() => {}}
                   >
                     Oublié ?
@@ -90,7 +90,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={mode === "signup" ? "8 caractères minimum" : "••••••••"}
                   required
-                  className="w-full pl-11 pr-11 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a237e] focus:bg-white transition"
+                  className="w-full pl-11 pr-11 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#c45d3e] focus:bg-white transition"
                 />
                 <button
                   type="button"
@@ -119,7 +119,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1a237e] text-white font-bold py-3.5 rounded-xl disabled:opacity-50 hover:bg-[#0d1457] transition-colors shadow-md flex items-center justify-center gap-2"
+              className="w-full bg-[#c45d3e] text-white font-bold py-3.5 rounded-2xl disabled:opacity-50 hover:bg-[#a84e34] transition-colors shadow-md flex items-center justify-center gap-2"
             >
               {loading ? (
                 "Chargement..."
@@ -138,7 +138,7 @@ export default function Login() {
                 setMode(mode === "login" ? "signup" : "login");
                 setError("");
               }}
-              className="text-[#1a237e] text-sm font-medium hover:underline"
+              className="text-[#c45d3e] text-sm font-medium hover:underline"
             >
               {mode === "login"
                 ? "Pas encore de compte ? S'inscrire"
@@ -150,7 +150,7 @@ export default function Login() {
 
       {/* Tagline at bottom */}
       <div className="py-6 text-center">
-        <p className="text-white/70 text-[10px] font-semibold tracking-[0.2em] uppercase italic">
+        <p className="text-[#b5ada5] text-[10px] font-semibold tracking-[0.2em] uppercase italic">
           Réparer plutôt que tout jeter.
         </p>
       </div>

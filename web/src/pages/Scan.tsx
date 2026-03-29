@@ -153,7 +153,7 @@ export default function Scan() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 relative">
+    <div className="flex flex-col h-full bg-[#faf8f5] relative">
       <div className="flex-1 overflow-y-auto">
         {/* Camera viewfinder zone */}
         <div className="relative">
@@ -183,10 +183,10 @@ export default function Scan() {
 
             {/* Viewfinder brackets */}
             <div className="absolute inset-8 sm:inset-12 z-10 pointer-events-none">
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-[#1a237e] rounded-tl" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-[#1a237e] rounded-tr" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-[#1a237e] rounded-bl" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-[#1a237e] rounded-br" />
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-[#c45d3e] rounded-tl" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-[#c45d3e] rounded-tr" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-[#c45d3e] rounded-bl" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-[#c45d3e] rounded-br" />
             </div>
 
             {/* Idle state: tap to start camera */}
@@ -238,17 +238,17 @@ export default function Scan() {
             disabled={loadingChat}
             className="w-full bg-white rounded-2xl shadow-md px-5 py-4 flex items-center gap-4 hover:shadow-lg transition-shadow disabled:opacity-50 text-left"
           >
-            <div className="w-12 h-12 bg-[#1a237e] rounded-xl flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 bg-[#c45d3e] rounded-xl flex items-center justify-center shrink-0">
               <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
                 <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3z" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="font-bold text-gray-900">Identification d&apos;Hodoor</p>
+              <p className="font-bold text-[#3d3833]">Identification d&apos;Hodoor</p>
               <p className="text-xs text-gray-400 font-semibold tracking-wide uppercase">
                 {loadingChat ? (
                   <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-[#f57c00] rounded-full animate-pulse" />
+                    <span className="w-1.5 h-1.5 bg-[#d4915e] rounded-full animate-pulse" />
                     Analyse en cours...
                   </span>
                 ) : cameraActive ? (
@@ -279,7 +279,7 @@ export default function Scan() {
         {/* Follow-up text input */}
         {messages.length > 0 && (
           <div className="px-4 pb-3">
-            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-[#f0ece7]">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -292,7 +292,7 @@ export default function Scan() {
                 }}
                 placeholder="Suite de la conversation..."
                 disabled={loadingChat}
-                className="flex-1 min-w-0 py-2 text-gray-900 placeholder-gray-400 text-sm bg-transparent focus:outline-none"
+                className="flex-1 min-w-0 py-2 text-[#3d3833] placeholder-gray-400 text-sm bg-transparent focus:outline-none"
               />
               <button
                 type="button"
@@ -301,7 +301,7 @@ export default function Scan() {
                   if (text && !loadingChat) sendText(text);
                 }}
                 disabled={!input.trim() || loadingChat}
-                className="w-9 h-9 bg-[#1a237e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#283593] transition-colors"
+                className="w-9 h-9 bg-[#c45d3e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#a84e34] transition-colors"
               >
                 <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
@@ -314,11 +314,11 @@ export default function Scan() {
         {/* Appliance list */}
         <div className="px-4 pt-5 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-gray-900 font-bold text-sm uppercase tracking-wide">
+            <h2 className="text-[#3d3833] font-bold text-sm uppercase tracking-wide">
               Historique récent
             </h2>
             {appliances.length > 0 && (
-              <span className="text-[#1a237e] text-sm font-semibold">Tout voir</span>
+              <span className="text-[#c45d3e] text-sm font-semibold">Tout voir</span>
             )}
           </div>
           {error && (
@@ -349,7 +349,7 @@ export default function Scan() {
               setPendingChatMessage("J'ai fini, fais le récap et le plan de prévention");
               navigate("/chat");
             }}
-            className="w-full bg-[#1a237e] text-white rounded-xl py-3.5 font-semibold text-sm shadow-lg flex items-center justify-center gap-2 hover:bg-[#283593] transition-colors"
+            className="w-full bg-[#c45d3e] text-white rounded-xl py-3.5 font-semibold text-sm shadow-lg flex items-center justify-center gap-2 hover:bg-[#a84e34] transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
@@ -362,14 +362,14 @@ export default function Scan() {
       {/* Floating Pro tip */}
       {tipOpen && (
         <div className="absolute bottom-2 left-3 right-3 z-20">
-          <div className="bg-[#fff3e0] rounded-xl p-3.5 border-l-4 border-[#f57c00] shadow-lg flex gap-3 items-start">
+          <div className="bg-[#fdf6ef] rounded-xl p-3.5 border-l-4 border-[#d4915e] shadow-lg flex gap-3 items-start">
             <div className="shrink-0 mt-0.5">
-              <svg viewBox="0 0 24 24" fill="#f57c00" className="w-5 h-5">
+              <svg viewBox="0 0 24 24" fill="#d4915e" className="w-5 h-5">
                 <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[#f57c00] font-bold text-xs uppercase tracking-wide mb-1">
+              <p className="text-[#d4915e] font-bold text-xs uppercase tracking-wide mb-1">
                 Conseil Pro
               </p>
               <p className="text-gray-600 text-sm leading-relaxed">

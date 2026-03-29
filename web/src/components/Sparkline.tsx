@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
-const TEAL = "#0d9488";
-const ORANGE = "#f97316";
-const RED = "#ef4444";
+const TEAL = "#7a9e7e";
+const ORANGE = "#d4915e";
+const RED = "#c45d5d";
 
 interface Props {
   values: number[];

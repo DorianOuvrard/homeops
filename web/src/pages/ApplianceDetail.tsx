@@ -117,7 +117,7 @@ export default function ApplianceDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
+      <div className="flex items-center justify-center h-full bg-[#faf8f5]">
         <span className="text-gray-400">Chargement...</span>
       </div>
     );
@@ -146,7 +146,7 @@ export default function ApplianceDetail() {
           if (file) { handlePhotoUpload(file); e.target.value = ""; }
         }}
       />
-      <div className="bg-[#1a237e] px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-[#c45d3e] px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button onClick={() => navigate(-1)} className="text-white/70 hover:text-white">
           <BackIcon />
         </button>
@@ -237,7 +237,7 @@ export default function ApplianceDetail() {
                       )}
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className={`font-bold text-lg ${isAnomaly ? "text-red-600" : "text-gray-900"}`}>
+                      <span className={`font-bold text-lg ${isAnomaly ? "text-red-600" : "text-[#3d3833]"}`}>
                         {s.current ?? "—"}
                       </span>
                       {s.unite && <span className="text-gray-400 text-xs">{s.unite}</span>}
@@ -278,9 +278,9 @@ export default function ApplianceDetail() {
             <div className="space-y-2">
               {upcoming.map((r) => (
                 <div key={r.id} className="bg-orange-50 border border-orange-100 rounded-xl p-3">
-                  <p className="text-gray-900 text-sm font-medium">{r.name}</p>
+                  <p className="text-[#3d3833] text-sm font-medium">{r.name}</p>
                   {r.schedule_date && (
-                    <p className="text-[#f57c00] text-xs mt-0.5">{formatDate(r.schedule_date)}</p>
+                    <p className="text-[#d4915e] text-xs mt-0.5">{formatDate(r.schedule_date)}</p>
                   )}
                   {r.description && (
                     <p className="text-gray-500 text-xs mt-1">{r.description}</p>
@@ -297,7 +297,7 @@ export default function ApplianceDetail() {
             <h2 className="text-gray-700 font-semibold text-sm mb-2">Historique</h2>
             <div className="space-y-2">
               {past.map((r) => (
-                <div key={r.id} className="bg-gray-50 rounded-xl p-3">
+                <div key={r.id} className="bg-[#faf8f5] rounded-xl p-3">
                   <p className="text-gray-700 text-sm">{r.name}</p>
                   {r.schedule_date && (
                     <p className="text-gray-400 text-xs mt-0.5">{formatDate(r.schedule_date)}</p>
@@ -334,19 +334,19 @@ export default function ApplianceDetail() {
             const text = input.trim();
             if (text && !chatLoading) sendMessage(text);
           }}
-          className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-gray-100"
+          className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-[#f0ece7]"
         >
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Question sur ${appliance?.name ?? "cet appareil"}...`}
             disabled={chatLoading}
-            className="flex-1 min-w-0 py-2 text-gray-900 placeholder-gray-400 text-sm bg-transparent focus:outline-none"
+            className="flex-1 min-w-0 py-2 text-[#3d3833] placeholder-gray-400 text-sm bg-transparent focus:outline-none"
           />
           <button
             type="submit"
             disabled={!input.trim() || chatLoading}
-            className="w-9 h-9 bg-[#1a237e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#283593] transition-colors"
+            className="w-9 h-9 bg-[#c45d3e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#a84e34] transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

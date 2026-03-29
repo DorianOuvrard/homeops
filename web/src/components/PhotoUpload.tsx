@@ -59,7 +59,7 @@ export default function PhotoUpload({ onPhoto, disabled }: PhotoUploadProps) {
         type="button"
         onClick={() => cameraRef.current?.click()}
         disabled={disabled}
-        className="p-2 text-gray-400 hover:text-[#f57c00] disabled:opacity-40 transition-colors"
+        className="p-2 text-gray-400 hover:text-[#d4915e] disabled:opacity-40 transition-colors"
         title="Prendre une photo"
       >
         <CameraIcon />
@@ -68,7 +68,7 @@ export default function PhotoUpload({ onPhoto, disabled }: PhotoUploadProps) {
         type="button"
         onClick={() => galleryRef.current?.click()}
         disabled={disabled}
-        className="p-2 text-gray-400 hover:text-[#f57c00] disabled:opacity-40 transition-colors"
+        className="p-2 text-gray-400 hover:text-[#d4915e] disabled:opacity-40 transition-colors"
         title="Choisir depuis la galerie"
       >
         <GalleryIcon />

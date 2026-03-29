@@ -139,7 +139,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-[#faf8f5]">
       {showHodor && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/20">
           <img
@@ -185,21 +185,21 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
         }}
       />
       <div className="px-4 py-3 shrink-0">
-        <div className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-[#f0ece7]">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
             placeholder="Demander à Hodoor..."
             disabled={loading}
-            className="flex-1 min-w-0 py-2 text-gray-900 placeholder-gray-400 text-sm bg-transparent focus:outline-none"
+            className="flex-1 min-w-0 py-2 text-[#3d3833] placeholder-gray-400 text-sm bg-transparent focus:outline-none"
           />
 
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
             disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-[#1a237e] disabled:opacity-40 transition-colors shrink-0"
+            className="p-1.5 text-gray-400 hover:text-[#c45d3e] disabled:opacity-40 transition-colors shrink-0"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
@@ -227,7 +227,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
             type="button"
             onClick={submit}
             disabled={!input.trim() || loading}
-            className="w-9 h-9 bg-[#1a237e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#283593] transition-colors"
+            className="w-9 h-9 bg-[#c45d3e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#a84e34] transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

@@ -13,11 +13,11 @@ function speakHodor() {
 
 export default function Header() {
   return (
-    <div className="bg-[#1a237e] px-4 py-3 flex items-center justify-center shrink-0">
+    <div className="bg-white border-b border-[#f0ece7] px-4 py-3 flex items-center justify-center shrink-0">
       <button
         type="button"
         onClick={speakHodor}
-        className="text-white font-bold text-lg tracking-wide"
+        className="text-[#c45d3e] font-bold text-lg tracking-wide"
         title="Ecouter Hodor"
       >
         HODOOR

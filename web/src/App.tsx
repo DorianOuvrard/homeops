@@ -17,7 +17,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#1a237e]">
+      <div className="flex items-center justify-center h-screen bg-[#faf8f5]">
         <span className="text-white text-lg">Chargement...</span>
       </div>
     );
@@ -81,7 +81,7 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#1a237e]">
+      <div className="flex items-center justify-center h-screen bg-[#faf8f5]">
         <span className="text-white text-lg">Chargement...</span>
       </div>
     );
