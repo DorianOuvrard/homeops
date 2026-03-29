@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { api, type Appliance, type ChatMessage } from "../api";
 import ApplianceCard from "../components/ApplianceCard";
 import MessageBubble from "../components/MessageBubble";
@@ -29,9 +30,12 @@ export default function Scan() {
       .finally(() => setLoadingAppliances(false));
   };
 
+  const location = useLocation();
   useEffect(() => {
-    refreshAppliances();
-  }, []);
+    if (location.pathname === "/scan") {
+      refreshAppliances();
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,10 +164,8 @@ export default function Scan() {
           />
           <canvas ref={canvasRef} className="hidden" />
 
-          <button
-            onClick={cameraActive ? capturePhoto : () => fileRef.current?.click()}
-            disabled={loadingChat}
-            className="w-full bg-gray-900 aspect-4/3 flex flex-col items-center justify-center disabled:opacity-50 transition-colors relative overflow-hidden"
+          <div
+            className="w-full bg-gray-900 aspect-4/3 relative overflow-hidden"
           >
             {/* Live camera feed */}
             {cameraActive && (
@@ -177,44 +179,56 @@ export default function Scan() {
             )}
 
             {/* Viewfinder brackets */}
-            <div className="absolute inset-8 sm:inset-12 z-10">
+            <div className="absolute inset-8 sm:inset-12 z-10 pointer-events-none">
               <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-[#1a237e] rounded-tl" />
               <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-[#1a237e] rounded-tr" />
               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-[#1a237e] rounded-bl" />
               <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-[#1a237e] rounded-br" />
             </div>
 
-            {/* Placeholder when camera not active */}
+            {/* Idle state: tap to start camera */}
             {!cameraActive && (
-              <svg viewBox="0 0 24 24" fill="white" className="w-12 h-12 opacity-20 z-10">
-                <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-                <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
-              </svg>
+              <button
+                onClick={() => { if (!loadingChat) startCamera(); }}
+                disabled={loadingChat}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 disabled:opacity-50"
+              >
+                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="white" className="w-8 h-8 opacity-60">
+                    <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
+                    <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                  </svg>
+                </div>
+                <span className="text-white/70 text-sm font-medium">
+                  {loadingChat ? "Identification en cours..." : "Appuyez pour scanner"}
+                </span>
+              </button>
             )}
 
-            {/* Capture button when camera is live */}
+            {/* Camera active: capture + cancel buttons */}
             {cameraActive && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-                <div className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center">
+              <div className="absolute bottom-4 left-0 right-0 z-10 flex items-center justify-center gap-6">
+                <button
+                  onClick={stopCamera}
+                  className="w-11 h-11 rounded-full bg-black/40 flex items-center justify-center"
+                >
+                  <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={capturePhoto}
+                  className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center"
+                >
                   <div className="w-12 h-12 rounded-full bg-white" />
-                </div>
+                </button>
+                <div className="w-11 h-11" />
               </div>
             )}
-          </button>
-
-          {/* Bottom overlay text */}
-          <div className="absolute bottom-8 left-0 right-0 px-4 z-10">
-            <p className="text-white text-sm text-center font-medium bg-black/50 rounded-xl mx-auto max-w-xs px-4 py-2.5">
-              {loadingChat
-                ? "Identification en cours..."
-                : cameraActive
-                  ? "Appuyez pour capturer"
-                  : "Alignez la plaque signalétique dans le cadre"}
-            </p>
           </div>
         </div>
 
-        {/* Identification badge card - CLICKABLE */}
+        {/* Identification badge card */}
         <div className="px-4 -mt-5 relative z-10">
           <button
             onClick={triggerScan}
