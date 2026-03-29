@@ -49,6 +49,45 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+def _build_anomaly_summary(config) -> str:
+    """Build a summary of current Jeedom anomalies for LLM context."""
+    try:
+        from bot.bran.api import _links, _get_jeedom
+        import statistics
+
+        jeedom = _get_jeedom()
+        anomalies = []
+        devices = jeedom.list_devices()
+        for device in devices:
+            if not device.get("isEnable", 1):
+                continue
+            cmds = jeedom.get_commands(device["id"])
+            for cmd in cmds:
+                if cmd.get("type") != "info" or cmd.get("subType") != "numeric":
+                    continue
+                try:
+                    history = jeedom.get_history(cmd["id"])
+                    if len(history) < 20:
+                        continue
+                    vals = [float(p["value"]) for p in history if p.get("value")]
+                    baseline = vals[:int(len(vals) * 0.8)]
+                    b_mean = statistics.mean(baseline)
+                    b_stdev = statistics.stdev(baseline) if len(baseline) > 1 else 0
+                    current = float(cmd.get("currentValue", 0))
+                    if current > b_mean + 2 * b_stdev:
+                        anomalies.append(
+                            f"- {device['name']} / {cmd['name']}: {current} {cmd.get('unite', '')} "
+                            f"(normal: {b_mean:.1f} ± {b_stdev:.1f})"
+                        )
+                except Exception:
+                    continue
+        if anomalies:
+            return "[Alertes capteurs Jeedom]\n" + "\n".join(anomalies)
+    except Exception:
+        pass
+    return ""
+
+
 def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_id: str) -> str:
     """Run get_response in a thread pool to avoid blocking the event loop."""
     from bot.llm import get_response
@@ -58,11 +97,18 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
     config = deps["config"]
     odoo = deps["odoo"]
 
+    # Inject Jeedom anomaly context for plan/recap requests
+    enriched_text = text
+    if any(kw in text.lower() for kw in ["plan", "récap", "recap", "prévention", "prevention", "entretien"]):
+        anomaly_summary = _build_anomaly_summary(config)
+        if anomaly_summary:
+            enriched_text = f"{anomaly_summary}\n\n{text}"
+
     past = history_obj.get(user_id)
     session.detect_onboarding(user_id, past, odoo)
     history_obj.add_user(user_id, f"[photo] {text}" if image_urls else text)
     reply = get_response(
-        text,
+        enriched_text,
         config,
         odoo,
         image_urls=image_urls,
