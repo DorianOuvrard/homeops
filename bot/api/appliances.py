@@ -49,14 +49,27 @@ def _get_appliance_with_maintenance(odoo, equipment_id: int) -> dict | None:
     return record
 
 
+def _resolve_m2o(value) -> str | None:
+    """Extract display name from a many2one field ([id, name] or False)."""
+    if isinstance(value, (list, tuple)) and len(value) > 1:
+        return value[1]
+    return None
+
+
 def _build_appliance_response(record: dict) -> ApplianceResponse:
-    category = None
-    if record.get("category_id") and isinstance(record["category_id"], (list, tuple)):
-        category = record["category_id"][1] if len(record["category_id"]) > 1 else str(record["category_id"][0])
     return ApplianceResponse(
         id=record["id"],
         name=record.get("name") or "",
-        category=category,
+        category=_resolve_m2o(record.get("category_id")),
+        model=record.get("model") or None,
+        serial_no=record.get("serial_no") or None,
+        vendor=_resolve_m2o(record.get("partner_id")),
+        vendor_ref=record.get("partner_ref") or None,
+        cost=record.get("cost") or None,
+        warranty_date=str(record["warranty_date"]) if record.get("warranty_date") else None,
+        effective_date=str(record["effective_date"]) if record.get("effective_date") else None,
+        location=record.get("location") or None,
+        note=record.get("note") or None,
         create_date=str(record.get("create_date") or ""),
         image_128=f"data:image/png;base64,{record['image_128']}" if record.get("image_128") else None,
         maintenance_requests=record.get("maintenance_requests", []),
