@@ -42,6 +42,7 @@ class ApplianceResponse(BaseModel):
     name: str
     category: str | None = None
     create_date: str | None = None
+    image_128: str | None = None
     maintenance_requests: list[dict] = []
 
 

@@ -5,7 +5,7 @@ interface ApplianceCardProps {
   appliance: Appliance;
 }
 
-function ApplianceIcon() {
+function PlaceholderIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-[#1a237e]">
       <path d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2v-2h-2V9h2zm-4 10H4V5h14v14z" />
@@ -23,10 +23,18 @@ export default function ApplianceCard({ appliance }: ApplianceCardProps) {
   return (
     <button
       onClick={() => navigate(`/scan/${appliance.id}`)}
-      className="w-full bg-white rounded-xl p-4 shadow-sm flex items-center gap-3 text-left hover:shadow-md transition-shadow"
+      className="w-full bg-white rounded-xl p-3 shadow-sm flex items-center gap-3 text-left hover:shadow-md transition-shadow"
     >
-      <div className="shrink-0 w-12 h-12 bg-[#e8eaf6] rounded-xl flex items-center justify-center">
-        <ApplianceIcon />
+      <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#e8eaf6] flex items-center justify-center">
+        {appliance.image_128 ? (
+          <img
+            src={appliance.image_128}
+            alt={appliance.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <PlaceholderIcon />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 truncate">{appliance.name}</p>
@@ -35,7 +43,7 @@ export default function ApplianceCard({ appliance }: ApplianceCardProps) {
         )}
         {upcomingCount > 0 && (
           <p className="text-xs text-[#f57c00] mt-0.5">
-            {upcomingCount} entretien{upcomingCount > 1 ? "s" : ""} a venir
+            {upcomingCount} entretien{upcomingCount > 1 ? "s" : ""} à venir
           </p>
         )}
       </div>

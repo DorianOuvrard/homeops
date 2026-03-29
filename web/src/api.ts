@@ -66,6 +66,7 @@ export interface Appliance {
   name: string;
   category: string | null;
   create_date: string | null;
+  image_128: string | null;
   maintenance_requests: MaintenanceRequest[];
 }
 

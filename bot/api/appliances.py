@@ -14,6 +14,30 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/appliances", tags=["appliances"])
 
 
+def _fetch_equipment_images(odoo, equipment_ids: list[int]) -> dict[int, str]:
+    """Batch-fetch the first image attachment for each equipment, returns {id: data_uri}."""
+    if not equipment_ids:
+        return {}
+    attachments = odoo.search_records(
+        "ir.attachment",
+        domain=[
+            ["res_model", "=", "maintenance.equipment"],
+            ["res_id", "in", equipment_ids],
+            ["mimetype", "like", "image/"],
+        ],
+        fields=["res_id", "datas", "mimetype"],
+        limit=len(equipment_ids),
+    )
+    image_map: dict[int, str] = {}
+    for att in attachments.get("records", []):
+        res_id = att.get("res_id")
+        datas = att.get("datas")
+        if res_id and datas and res_id not in image_map:
+            mimetype = att.get("mimetype", "image/png")
+            image_map[res_id] = f"data:{mimetype};base64,{datas}"
+    return image_map
+
+
 def _list_appliances(odoo) -> list[dict]:
     result = odoo.search_records(
         "maintenance.equipment",
@@ -21,7 +45,11 @@ def _list_appliances(odoo) -> list[dict]:
         fields=["id", "name", "category_id", "create_date"],
         limit=50,
     )
-    return result.get("records", [])
+    records = result.get("records", [])
+    image_map = _fetch_equipment_images(odoo, [r["id"] for r in records])
+    for r in records:
+        r["image_128"] = image_map.get(r["id"])
+    return records
 
 
 def _get_appliance_with_maintenance(odoo, equipment_id: int) -> dict | None:
@@ -42,6 +70,8 @@ def _get_appliance_with_maintenance(odoo, equipment_id: int) -> dict | None:
         limit=50,
     )
     record["maintenance_requests"] = maint.get("records", [])
+    image_map = _fetch_equipment_images(odoo, [equipment_id])
+    record["image_128"] = image_map.get(equipment_id)
     return record
 
 
@@ -54,6 +84,7 @@ def _build_appliance_response(record: dict) -> ApplianceResponse:
         name=record.get("name") or "",
         category=category,
         create_date=str(record.get("create_date") or ""),
+        image_128=record.get("image_128"),
         maintenance_requests=record.get("maintenance_requests", []),
     )
 
