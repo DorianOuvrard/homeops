@@ -128,7 +128,7 @@ def create_app(config, shared_deps: dict) -> FastAPI:
             if file_path.is_file():
                 return FileResponse(file_path)
             # Otherwise serve index.html for React Router
-            return FileResponse(_WEB_DIST / "index.html")
+            return FileResponse(_WEB_DIST / "index.html", media_type="text/html")
 
         logger.info("Serving React PWA from %s", _WEB_DIST)
     else:
