@@ -27,7 +27,8 @@ function extractImage(content: string): { text: string; url: string | null } {
     const filtered = DEFAULT_PHOTO_PROMPTS.includes(text.toLowerCase()) ? "" : text;
     return { text: filtered, url: null };
   }
-  return { text: content, url: null };
+  const filtered = DEFAULT_PHOTO_PROMPTS.includes(content.toLowerCase()) ? "" : content;
+  return { text: filtered, url: null };
 }
 
 function PlayButton({ audioUrl }: { audioUrl: string }) {
