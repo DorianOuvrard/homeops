@@ -199,7 +199,24 @@ TOOLS = [
 ]
 
 
-def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str, on_mode_change=None) -> str:
+def _extract_base64(image_urls: list[str] | None) -> str | None:
+    """Extract raw base64 from the first data URI, if any."""
+    if not image_urls:
+        return None
+    for url in image_urls:
+        if url.startswith("data:") and ";base64," in url:
+            return url.split(";base64,", 1)[1]
+    return None
+
+
+def dispatch(
+    config: BotConfig,
+    odoo: OdooClient,
+    name: str,
+    arguments: str,
+    on_mode_change=None,
+    image_urls: list[str] | None = None,
+) -> str:
     """Execute a tool call and return the JSON result."""
     args = json.loads(arguments)
     logger.info("Tool call: %s(%s)", name, args)
@@ -218,8 +235,16 @@ def dispatch(config: BotConfig, odoo: OdooClient, name: str, arguments: str, on_
                 if "values" not in args or not args["values"]:
                     result = {"error": "values is required and must include at least 'name'"}
                 else:
+                    if args.get("model") == "maintenance.equipment":
+                        b64 = _extract_base64(image_urls)
+                        if b64 and "image_1920" not in args["values"]:
+                            args["values"]["image_1920"] = b64
                     result = odoo.create_record(**args)
             case "update_record":
+                if args.get("model") == "maintenance.equipment":
+                    b64 = _extract_base64(image_urls)
+                    if b64 and "image_1920" not in args.get("values", {}):
+                        args.setdefault("values", {})["image_1920"] = b64
                 result = odoo.update_record(**args)
             case "delete_record":
                 result = odoo.delete_record(**args)
