@@ -28,6 +28,9 @@ RUN uv pip install --system --no-cache .
 # Copy built React PWA to be served as static files.
 COPY --from=web-builder /web/dist ./web/dist
 
+# Create data directory for SQLite (ephemeral on CC, persistent with volumes).
+RUN mkdir -p /data
+
 # Expose FastAPI port
 EXPOSE 8000
 
