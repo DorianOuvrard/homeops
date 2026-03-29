@@ -21,8 +21,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
   if (res.status === 401 && !path.startsWith("/auth/")) {
+    // Clear stale token, auto-login will retry on next page load
     localStorage.removeItem("hodoor_token");
-    window.location.href = "/login";
+    window.location.reload();
     throw new Error("Unauthorized");
   }
 

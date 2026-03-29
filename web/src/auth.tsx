@@ -18,17 +18,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
+    if (token) {
+      api.auth
+        .me()
+        .then(setUser)
+        .catch(() => {
+          localStorage.removeItem("hodoor_token");
+          setToken(null);
+        })
+        .finally(() => setLoading(false));
       return;
     }
+    // Auto-login: create anonymous user silently
+    const email = "demo@hodoor.local";
+    const password = "hodoor-demo-2026";
     api.auth
-      .me()
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("hodoor_token");
-        setToken(null);
+      .login(email, password)
+      .catch(() => api.auth.signup(email, password).then(() => api.auth.login(email, password)))
+      .then((res) => {
+        if (res) {
+          localStorage.setItem("hodoor_token", res.access_token);
+          setToken(res.access_token);
+        }
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [token]);
 

@@ -91,7 +91,7 @@ function AppRoutes() {
     <Routes>
       <Route
         path="/login"
-        element={user ? <Navigate to="/scan" replace /> : <Login />}
+        element={<Navigate to="/scan" replace />}
       />
       <Route
         path="/*"
