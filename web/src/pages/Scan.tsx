@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Appliance, type ChatMessage } from "../api";
 import ApplianceCard from "../components/ApplianceCard";
 import MessageBubble from "../components/MessageBubble";
@@ -14,6 +14,10 @@ export default function Scan() {
   const [tipOpen, setTipOpen] = useState(
     () => localStorage.getItem("scan_tip_dismissed") !== "true",
   );
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -33,10 +37,60 @@ export default function Scan() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loadingChat]);
 
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraActive(true);
+    } catch {
+      // Camera not available, fall back to file picker
+      fileRef.current?.click();
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  useEffect(() => {
+    return () => { stopCamera(); };
+  }, [stopCamera]);
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    stopCamera();
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], "scan.jpg", { type: "image/jpeg" });
+        sendScanPhoto(file);
+      }
+    }, "image/jpeg", 0.85);
+  }, [stopCamera]);
+
   const sendScanPhoto = async (file: File) => {
-    const userMsg: ChatMessage = {
-      role: "user",
-      content: "[photo] Identifie cet appareil.",
+    const imageUrl = URL.createObjectURL(file);
+    const userMsg = {
+      role: "user" as const,
+      content: "Identifie cet appareil.",
+      imageUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoadingChat(true);
@@ -83,6 +137,14 @@ export default function Scan() {
     }
   };
 
+  const triggerScan = () => {
+    if (cameraActive) {
+      capturePhoto();
+    } else {
+      startCamera();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-50 relative">
       <div className="flex-1 overflow-y-auto">
@@ -96,45 +158,75 @@ export default function Scan() {
             className="hidden"
             onChange={handleFileChange}
           />
+          <canvas ref={canvasRef} className="hidden" />
+
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={cameraActive ? capturePhoto : () => fileRef.current?.click()}
             disabled={loadingChat}
-            className="w-full bg-gray-800 aspect-4/3 flex flex-col items-center justify-center disabled:opacity-50 transition-colors relative overflow-hidden"
+            className="w-full bg-gray-900 aspect-4/3 flex flex-col items-center justify-center disabled:opacity-50 transition-colors relative overflow-hidden"
           >
-            {/* Viewfinder blue brackets */}
-            <div className="absolute inset-8 sm:inset-12">
+            {/* Live camera feed */}
+            {cameraActive && (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+
+            {/* Viewfinder brackets */}
+            <div className="absolute inset-8 sm:inset-12 z-10">
               <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-[#1a237e] rounded-tl" />
               <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-[#1a237e] rounded-tr" />
               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-[#1a237e] rounded-bl" />
               <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-[#1a237e] rounded-br" />
             </div>
 
-            {/* Placeholder camera icon when no photo */}
-            <svg viewBox="0 0 24 24" fill="white" className="w-12 h-12 opacity-20">
-              <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-              <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
-            </svg>
+            {/* Placeholder when camera not active */}
+            {!cameraActive && (
+              <svg viewBox="0 0 24 24" fill="white" className="w-12 h-12 opacity-20 z-10">
+                <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
+              </svg>
+            )}
+
+            {/* Capture button when camera is live */}
+            {cameraActive && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                <div className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white" />
+                </div>
+              </div>
+            )}
           </button>
 
           {/* Bottom overlay text */}
-          <div className="absolute bottom-8 left-0 right-0 px-4">
+          <div className="absolute bottom-8 left-0 right-0 px-4 z-10">
             <p className="text-white text-sm text-center font-medium bg-black/50 rounded-xl mx-auto max-w-xs px-4 py-2.5">
               {loadingChat
                 ? "Identification en cours..."
-                : "Alignez la plaque signalétique dans le cadre"}
+                : cameraActive
+                  ? "Appuyez pour capturer"
+                  : "Alignez la plaque signalétique dans le cadre"}
             </p>
           </div>
         </div>
 
-        {/* Identification badge card */}
+        {/* Identification badge card - CLICKABLE */}
         <div className="px-4 -mt-5 relative z-10">
-          <div className="bg-white rounded-2xl shadow-md px-5 py-4 flex items-center gap-4">
+          <button
+            onClick={triggerScan}
+            disabled={loadingChat}
+            className="w-full bg-white rounded-2xl shadow-md px-5 py-4 flex items-center gap-4 hover:shadow-lg transition-shadow disabled:opacity-50 text-left"
+          >
             <div className="w-12 h-12 bg-[#1a237e] rounded-xl flex items-center justify-center shrink-0">
               <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
                 <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3z" />
               </svg>
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-bold text-gray-900">Identification d&apos;Hodoor</p>
               <p className="text-xs text-gray-400 font-semibold tracking-wide uppercase">
                 {loadingChat ? (
@@ -142,19 +234,25 @@ export default function Scan() {
                     <span className="w-1.5 h-1.5 bg-[#f57c00] rounded-full animate-pulse" />
                     Analyse en cours...
                   </span>
+                ) : cameraActive ? (
+                  "Caméra active"
                 ) : (
-                  "Analyse en temps réel"
+                  "Appuyez pour scanner"
                 )}
               </p>
             </div>
-          </div>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-300 shrink-0">
+              <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
+              <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+            </svg>
+          </button>
         </div>
 
         {/* Chat messages from scan */}
         {messages.length > 0 && (
           <div className="px-4 pt-4 pb-2 space-y-1">
             {messages.map((m, i) => (
-              <MessageBubble key={i} role={m.role} content={m.content} />
+              <MessageBubble key={i} role={m.role} content={m.content} imageUrl={(m as { imageUrl?: string }).imageUrl} />
             ))}
             {loadingChat && <LoadingDots />}
             <div ref={bottomRef} />
@@ -224,7 +322,6 @@ export default function Scan() {
             </div>
           )}
         </div>
-
       </div>
 
       {/* Floating Pro tip */}
