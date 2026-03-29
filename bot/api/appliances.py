@@ -5,9 +5,12 @@ import logging
 
 from fastapi import APIRouter, HTTPException, status
 
+from fastapi import File, UploadFile
+
 from bot.api.deps import CurrentUser, get_deps
 from bot.api.models import ApplianceResponse, ChatHistoryItem, ChatMessageRequest, ChatMessageResponse
 from datetime import UTC, datetime
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +113,31 @@ async def get_appliance(equipment_id: int, current_user: CurrentUser):
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appliance not found.")
     return _build_appliance_response(record)
+
+
+@router.post("/{equipment_id}/photo")
+async def upload_appliance_photo(
+    equipment_id: int,
+    current_user: CurrentUser,
+    photo: UploadFile = File(...),
+):
+    """Upload a photo to an Odoo equipment's image_128 field."""
+    deps = get_deps()
+    odoo = deps["odoo"]
+
+    photo_bytes = await photo.read()
+    b64_image = base64.b64encode(photo_bytes).decode()
+
+    try:
+        await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: odoo.update_record("maintenance.equipment", equipment_id, {"image_128": b64_image}),
+        )
+    except Exception as exc:
+        logger.error("Photo upload error id=%d: %s", equipment_id, exc)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not upload photo.")
+
+    return {"ok": True, "image_128": f"data:image/png;base64,{b64_image}"}
 
 
 @router.post("/{equipment_id}/chat", response_model=ChatMessageResponse)
