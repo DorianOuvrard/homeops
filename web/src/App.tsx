@@ -6,6 +6,7 @@ import Chat from "./pages/Chat";
 import Scan from "./pages/Scan";
 import Maintenance from "./pages/Maintenance";
 import Settings from "./pages/Settings";
+import Bran from "./pages/Bran";
 import ApplianceDetail from "./pages/ApplianceDetail";
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
@@ -60,6 +61,9 @@ function PersistentTabs() {
       </div>
       <div className="h-full" style={{ display: path === "/maintenance" ? undefined : "none" }}>
         <Maintenance />
+      </div>
+      <div className="h-full" style={{ display: path === "/bran" ? undefined : "none" }}>
+        <Bran />
       </div>
       <div className="h-full" style={{ display: path === "/settings" ? undefined : "none" }}>
         <Settings />
