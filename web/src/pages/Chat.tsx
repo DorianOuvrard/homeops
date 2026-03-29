@@ -9,14 +9,19 @@ interface DisplayMessage extends ChatMessage {
   audioUrl?: string;
 }
 
+const HODOR_IMAGE_URL =
+  "https://funko.com/dw/image/v2/BGTS_PRD/on/demandware.static/-/Sites-funko-master-catalog/default/dw99acc27a/images/funko/45053-1.png?sh=800&sw=800";
+
 export default function Chat() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [showHodor, setShowHodor] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const speechBaseRef = useRef("");
+  const hodorTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     api.chat
@@ -30,7 +35,29 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => {
+    return () => {
+      if (hodorTimeoutRef.current !== null) {
+        window.clearTimeout(hodorTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const triggerHodor = () => {
+    setShowHodor(true);
+    if (hodorTimeoutRef.current !== null) {
+      window.clearTimeout(hodorTimeoutRef.current);
+    }
+    hodorTimeoutRef.current = window.setTimeout(() => {
+      setShowHodor(false);
+      hodorTimeoutRef.current = null;
+    }, 2200);
+  };
+
   const sendText = async (text: string) => {
+    if (text.trim().toLowerCase() === "hold the door") {
+      triggerHodor();
+    }
     const userMsg: DisplayMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -82,6 +109,16 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
+      {showHodor && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <img
+            src={HODOR_IMAGE_URL}
+            alt="Hodor holding the door"
+            className="w-[78vw] max-w-[420px] hodor-pop"
+          />
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
         {initialLoad ? (
