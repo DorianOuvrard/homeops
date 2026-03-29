@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from bot.api.appliances import router as appliances_router
 from bot.api.maintenance import router as maintenance_router
+from bot.bran.api import router as bran_router
 from bot.api.auth import build_auth_router
 from bot.api.chat import router as chat_router
 from bot.api.deps import CurrentUser, set_jwt_secret, set_shared_deps
@@ -96,6 +97,7 @@ def create_app(config, shared_deps: dict) -> FastAPI:
     api.include_router(chat_router)
     api.include_router(appliances_router)
     api.include_router(maintenance_router)
+    api.include_router(bran_router)
     api.include_router(push_router)
 
     @api.get("/health")

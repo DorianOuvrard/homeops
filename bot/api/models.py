@@ -78,6 +78,36 @@ class MaintenanceStageResponse(BaseModel):
     name: str
 
 
+class BranDeviceCommand(BaseModel):
+    id: int
+    name: str
+    type: str  # "info" or "action"
+    subtype: str | None = None  # "numeric", "string", "binary"
+    value: str | None = None
+    unite: str | None = None
+
+
+class BranDeviceResponse(BaseModel):
+    id: int
+    name: str
+    is_enable: bool = True
+    object_name: str | None = None  # room
+    eq_type: str | None = None  # plugin type (e.g. "virtual")
+    commands: list[BranDeviceCommand] = []
+    linked_equipment_id: int | None = None
+    linked_equipment_name: str | None = None
+
+
+class BranStatusResponse(BaseModel):
+    connected: bool
+    device_count: int = 0
+    jeedom_url: str | None = None
+
+
+class BranLinkRequest(BaseModel):
+    equipment_id: int
+
+
 class PushSubscriptionKeys(BaseModel):
     p256dh: str
     auth: str

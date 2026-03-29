@@ -34,6 +34,9 @@ class BotConfig:
     jwt_secret: str = ""
     sqlite_path: str = "data/hodoor.db"
     api_port: int = 8000
+    # Jeedom (Bran module)
+    jeedom_url: str = ""
+    jeedom_api_key: str = ""
 
 
 def load_config() -> BotConfig:
@@ -61,4 +64,6 @@ def load_config() -> BotConfig:
         jwt_secret=os.environ.get("JWT_SECRET", ""),
         sqlite_path=os.environ.get("SQLITE_PATH", "data/hodoor.db"),
         api_port=int(os.environ.get("PORT", os.environ.get("API_PORT", "8000"))),
+        jeedom_url=os.environ.get("JEEDOM_URL", "http://localhost:9080"),
+        jeedom_api_key=os.environ.get("JEEDOM_API_KEY", ""),
     )

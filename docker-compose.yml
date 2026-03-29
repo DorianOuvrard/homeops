@@ -49,8 +49,20 @@ services:
       - hodoor-data:/data
     restart: unless-stopped
 
+  jeedom:
+    image: jeedom/jeedom:latest
+    container_name: homeops-jeedom
+    ports:
+      - "9080:80"
+    volumes:
+      - jeedom-data:/var/www/html
+      - jeedom-db:/var/lib/mysql
+    restart: unless-stopped
+
 volumes:
   odoo-data:
   pg-data:
   odoo-addons:
   hodoor-data:
+  jeedom-data:
+  jeedom-db:
