@@ -42,6 +42,15 @@ class ApplianceResponse(BaseModel):
     id: int
     name: str
     category: str | None = None
+    model: str | None = None
+    serial_no: str | None = None
+    vendor: str | None = None
+    vendor_ref: str | None = None
+    cost: float | None = None
+    warranty_date: str | None = None
+    effective_date: str | None = None
+    location: str | None = None
+    note: str | None = None
     create_date: str | None = None
     image_128: str | None = None
     maintenance_requests: list[dict] = []

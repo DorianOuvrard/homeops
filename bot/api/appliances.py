@@ -18,7 +18,9 @@ def _list_appliances(odoo) -> list[dict]:
     result = odoo.search_records(
         "maintenance.equipment",
         domain=[],
-        fields=["id", "name", "category_id", "create_date", "image_128"],
+        fields=["id", "name", "category_id", "model", "serial_no", "partner_id",
+                "partner_ref", "cost", "warranty_date", "effective_date",
+                "location", "note", "create_date", "image_128"],
         limit=50,
     )
     return result.get("records", [])
@@ -28,7 +30,9 @@ def _get_appliance_with_maintenance(odoo, equipment_id: int) -> dict | None:
     result = odoo.get_record(
         "maintenance.equipment",
         equipment_id,
-        fields=["id", "name", "category_id", "create_date", "image_128"],
+        fields=["id", "name", "category_id", "model", "serial_no", "partner_id",
+                "partner_ref", "cost", "warranty_date", "effective_date",
+                "location", "note", "create_date", "image_128"],
     )
     if "error" in result:
         return None
