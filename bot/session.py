@@ -30,10 +30,41 @@ def detect_onboarding(
         pass
 
 
-def get_system_prompt(user_id: int | str, config: BotConfig) -> str | None:
+def _build_reference_data(odoo: OdooClient) -> str:
+    """Pre-fetch Odoo reference data to avoid redundant LLM tool calls."""
+    lines = []
+    try:
+        cats = odoo.search_records(
+            "maintenance.equipment.category", domain=[], fields=["id", "name"], limit=20
+        )
+        if cats.get("records"):
+            lines.append("Catégories (utilise directement ces IDs, pas de search nécessaire) :")
+            for c in cats["records"]:
+                lines.append(f"  - id={c['id']}: {c['name']}")
+    except Exception:
+        pass
+    try:
+        partners = odoo.search_records(
+            "res.partner", domain=[["is_company", "=", True]], fields=["id", "name"], limit=30
+        )
+        if partners.get("records"):
+            lines.append("Fabricants déjà connus (utilise directement ces IDs) :")
+            for p in partners["records"]:
+                lines.append(f"  - id={p['id']}: {p['name']}")
+    except Exception:
+        pass
+    return "\n".join(lines)
+
+
+def get_system_prompt(user_id: int | str, config: BotConfig, odoo: OdooClient | None = None) -> str | None:
     """Return the onboarding prompt if user is in onboarding mode, else None."""
     if user_id in _onboarding_users:
-        return config.onboarding_prompt
+        prompt = config.onboarding_prompt
+        if odoo:
+            ref_data = _build_reference_data(odoo)
+            if ref_data:
+                prompt = f"{prompt}\n\n## Référentiel Odoo (pré-chargé)\n{ref_data}"
+        return prompt
     return None
 
 
