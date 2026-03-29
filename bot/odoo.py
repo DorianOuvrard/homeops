@@ -1,6 +1,7 @@
 """Odoo XML-RPC client for the Telegram bot."""
 
 import logging
+import threading
 import xmlrpc.client
 from dataclasses import dataclass
 from datetime import datetime
@@ -27,6 +28,7 @@ class OdooClient:
     def __init__(self, config: OdooConfig) -> None:
         self._config = config
         self._uid: int | None = None
+        self._lock = threading.Lock()
         self._common = xmlrpc.client.ServerProxy(f"{config.url}/xmlrpc/2/common")
         self._models = xmlrpc.client.ServerProxy(f"{config.url}/xmlrpc/2/object")
 
@@ -40,10 +42,11 @@ class OdooClient:
         return self._uid
 
     def _execute(self, model: str, method: str, *args, **kwargs):
-        return self._models.execute_kw(
-            self._config.db, self.uid, self._config.password,
-            model, method, *args, **kwargs,
-        )
+        with self._lock:
+            return self._models.execute_kw(
+                self._config.db, self.uid, self._config.password,
+                model, method, *args, **kwargs,
+            )
 
     def search_records(
         self,
