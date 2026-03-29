@@ -8,6 +8,7 @@ exec python3 /usr/local/bin/odoo_cc_start.py \
   --db_password="${POSTGRESQL_ADDON_PASSWORD}" \
   -d "${POSTGRESQL_ADDON_DB}" \
   --db-filter="^${POSTGRESQL_ADDON_DB}$" \
-  -i base,maintenance,maintenance_image \
+  -i maintenance_image \
+  -u maintenance \
   --http-port="${PORT:-8069}" \
   --proxy-mode
