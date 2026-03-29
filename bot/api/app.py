@@ -17,7 +17,7 @@ from bot.api.chat import router as chat_router
 from bot.api.deps import CurrentUser, set_jwt_secret, set_shared_deps
 from bot.api.models import UserResponse
 from bot.api.push import router as push_router
-from bot.db import init_db
+from bot.db import init_db, set_db_path
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ def create_app(config, shared_deps: dict) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         # Initialize SQLite
+        set_db_path(config.sqlite_path)
         await init_db(config.sqlite_path)
 
         # Wire up shared state for dependency injection
