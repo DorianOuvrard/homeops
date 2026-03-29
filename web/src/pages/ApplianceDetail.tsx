@@ -327,26 +327,26 @@ export default function ApplianceDetail() {
       </div>
 
       {/* Chat input */}
-      <div className="bg-white border-t border-gray-100 px-3 py-2 flex-shrink-0">
+      <div className="px-4 py-3 flex-shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             const text = input.trim();
             if (text && !chatLoading) sendMessage(text);
           }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-sm border border-gray-100"
         >
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Question sur ${appliance?.name ?? "cet appareil"}...`}
             disabled={chatLoading}
-            className="flex-1 px-4 py-2.5 rounded-full bg-gray-100 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#1a237e] transition"
+            className="flex-1 min-w-0 py-2 text-gray-900 placeholder-gray-400 text-sm bg-transparent focus:outline-none"
           />
           <button
             type="submit"
             disabled={!input.trim() || chatLoading}
-            className="w-9 h-9 bg-[#f57c00] rounded-full flex items-center justify-center disabled:opacity-40 flex-shrink-0"
+            className="w-9 h-9 bg-[#1a237e] rounded-full flex items-center justify-center disabled:opacity-30 shrink-0 hover:bg-[#283593] transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
