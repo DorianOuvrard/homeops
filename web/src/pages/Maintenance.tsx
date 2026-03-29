@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api, type MaintenanceTask, type MaintenanceStage } from "../api";
 import { useAppContext } from "../AppContext";
+import {
+  Wrench, AirVent, WashingMachine, Refrigerator, CookingPot, Flame,
+  DoorOpen, Fence, Zap, Droplets, Tv, Wifi, Fan, Heater, Blinds,
+  Shield, AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
 
 type TimeGroup = "overdue" | "thisWeek" | "thisMonth" | "later" | "unplanned";
 
@@ -15,6 +21,39 @@ const GROUP_CONFIG: Record<TimeGroup, { label: string; accent: string }> = {
 
 const GROUP_ORDER: TimeGroup[] = ["overdue", "thisWeek", "thisMonth", "later", "unplanned"];
 
+// Category icons (Lucide) from equipment name keywords
+const CATEGORY_ICONS: [string[], LucideIcon][] = [
+  [["climatiseur", "climatisation", "clim"], AirVent],
+  [["ventil", "fan", "extracteur"], Fan],
+  [["chauffage", "radiateur"], Heater],
+  [["lave", "machine à laver"], WashingMachine],
+  [["frigo", "réfrig", "congél"], Refrigerator],
+  [["four", "micro", "plaque", "hotte", "cuisin"], CookingPot],
+  [["chauffe-eau", "ballon", "cumulus"], Flame],
+  [["portail", "porte", "serrure"], DoorOpen],
+  [["volet", "store", "fenêtre"], Blinds],
+  [["tondeuse", "jardin", "arrosage", "piscine", "clôture"], Fence],
+  [["électr", "prise", "tableau", "disjoncteur"], Zap],
+  [["robinet", "plomb", "fuite", "tuyau", "siphon"], Droplets],
+  [["tv", "télé", "écran", "projecteur"], Tv],
+  [["wifi", "routeur", "box", "réseau"], Wifi],
+];
+
+function getCategoryIcon(equipmentName: string | undefined): LucideIcon {
+  if (!equipmentName) return Wrench;
+  const lower = equipmentName.toLowerCase();
+  for (const [keywords, icon] of CATEGORY_ICONS) {
+    if (keywords.some((kw) => lower.includes(kw))) return icon;
+  }
+  return Wrench;
+}
+
+function cleanEquipmentName(name: string | undefined): string {
+  if (!name) return "";
+  // Strip serial/model refs like "/2450781-03" or "/ATL-2024-08812"
+  return name.replace(/\/[\w-]+$/, "").trim();
+}
+
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -22,8 +61,7 @@ function startOfDay(d: Date): Date {
 function endOfWeek(d: Date): Date {
   const day = d.getDay();
   const diff = day === 0 ? 0 : 7 - day;
-  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff, 23, 59, 59);
-  return end;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff, 23, 59, 59);
 }
 
 function endOfMonth(d: Date): Date {
@@ -49,12 +87,12 @@ function formatRelative(dateStr: string): string {
   if (diffDays === 0) return "Aujourd'hui";
   if (diffDays === 1) return "Demain";
   if (diffDays === -1) return "Hier";
-  if (diffDays < -1) return `Il y a ${Math.abs(diffDays)} jours`;
-  if (diffDays <= 6) return `Dans ${diffDays} jours`;
-  if (diffDays <= 13) return "La semaine prochaine";
+  if (diffDays < -1) return `Il y a ${Math.abs(diffDays)}j`;
+  if (diffDays <= 6) return `Dans ${diffDays}j`;
+  if (diffDays <= 13) return "Sem. prochaine";
   const weeks = Math.round(diffDays / 7);
-  if (weeks <= 4) return `Dans ${weeks} semaines`;
-  return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  if (weeks <= 4) return `Dans ${weeks} sem.`;
+  return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
 function groupTasks(tasks: MaintenanceTask[]): Map<TimeGroup, MaintenanceTask[]> {
@@ -77,6 +115,142 @@ function countThisWeekTasks(tasks: MaintenanceTask[]): number {
   }).length;
 }
 
+// ── Health score ───────────────────────────────────────────────────
+
+function computeHealthScore(tasks: MaintenanceTask[]): number {
+  if (tasks.length === 0) return 100;
+  const overdue = tasks.filter((t) => classifyDate(t.schedule_date) === "overdue").length;
+  const thisWeek = tasks.filter((t) => classifyDate(t.schedule_date) === "thisWeek").length;
+  // Overdue tasks cost 15pts each, this-week tasks cost 3pts each
+  const penalty = overdue * 15 + thisWeek * 3;
+  return Math.max(0, Math.min(100, 100 - penalty));
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 80) return "#10b981"; // green
+  if (score >= 50) return "#f59e0b"; // amber
+  return "#ef4444"; // red
+}
+
+function getScoreMessage(score: number): string {
+  if (score >= 90) return "Votre maison est en pleine forme";
+  if (score >= 70) return "Quelques tâches à prévoir";
+  if (score >= 50) return "Attention, du retard s'accumule";
+  return "Votre maison a besoin d'attention";
+}
+
+function HealthRing({ score }: { score: number }) {
+  const radius = 40;
+  const stroke = 6;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (score / 100) * circumference;
+  const color = getScoreColor(score);
+
+  return (
+    <div className="relative w-24 h-24">
+      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#f3f4f6" strokeWidth={stroke} />
+        <circle
+          cx="50" cy="50" r={radius} fill="none"
+          stroke={color} strokeWidth={stroke}
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - progress}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-gray-900">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Swipeable card ─────────────────────────────────────────────────
+
+const SWIPE_THRESHOLD = 80;
+
+function SwipeCard({
+  children,
+  onSwipeLeft,
+  onSwipeRight,
+  canSwipeRight = true,
+}: {
+  children: React.ReactNode;
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+  canSwipeRight?: boolean;
+}) {
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const swiping = useRef(false);
+
+  const handleStart = (x: number) => {
+    startX.current = x;
+    currentX.current = 0;
+    swiping.current = true;
+    if (cardRef.current) cardRef.current.style.transition = "none";
+  };
+
+  const handleMove = (x: number) => {
+    if (!swiping.current) return;
+    const delta = x - startX.current;
+    // Limit swipe range and apply resistance
+    const clamped = Math.sign(delta) * Math.min(Math.abs(delta), 140);
+    // Block right swipe if can't mark done
+    if (clamped > 0 && !canSwipeRight) return;
+    currentX.current = clamped;
+    if (cardRef.current) {
+      cardRef.current.style.transform = `translateX(${clamped}px)`;
+    }
+  };
+
+  const handleEnd = () => {
+    if (!swiping.current) return;
+    swiping.current = false;
+    const delta = currentX.current;
+    if (cardRef.current) {
+      cardRef.current.style.transition = "transform 0.3s ease-out";
+      cardRef.current.style.transform = "translateX(0)";
+    }
+    if (delta > SWIPE_THRESHOLD && canSwipeRight) {
+      onSwipeRight();
+    } else if (delta < -SWIPE_THRESHOLD) {
+      onSwipeLeft();
+    }
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Background actions revealed on swipe */}
+      <div className="absolute inset-0 flex">
+        <div className="flex-1 bg-green-500 flex items-center pl-5">
+          <span className="text-white text-xs font-semibold">Fait</span>
+        </div>
+        <div className="flex-1 bg-[#f57c00] flex items-center justify-end pr-5">
+          <span className="text-white text-xs font-semibold">+7 jours</span>
+        </div>
+      </div>
+      <div
+        ref={cardRef}
+        onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+        onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+        onTouchEnd={handleEnd}
+        onMouseDown={(e) => handleStart(e.clientX)}
+        onMouseMove={(e) => { if (swiping.current) handleMove(e.clientX); }}
+        onMouseUp={handleEnd}
+        onMouseLeave={() => { if (swiping.current) handleEnd(); }}
+        className="relative cursor-grab active:cursor-grabbing"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────
+
 export default function Maintenance() {
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [stages, setStages] = useState<MaintenanceStage[]>([]);
@@ -96,7 +270,6 @@ export default function Maintenance() {
       .finally(() => setLoading(false));
   }, [setMaintenanceBadge]);
 
-  // Only fetch when tab becomes visible (persistent tab, no need to fetch while hidden)
   useEffect(() => {
     if (location.pathname === "/maintenance") {
       fetchData();
@@ -134,6 +307,7 @@ export default function Maintenance() {
   };
 
   const grouped = groupTasks(tasks);
+  const healthScore = computeHealthScore(tasks);
 
   if (loading) {
     return (
@@ -146,25 +320,43 @@ export default function Maintenance() {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-gray-50 px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 text-gray-300">
-            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <p className="text-gray-700 font-semibold text-base">Aucun entretien prévu</p>
+        <HealthRing score={100} />
+        <p className="text-gray-700 font-semibold text-base mt-4">Tout est en ordre</p>
         <p className="text-gray-400 text-sm mt-1">
-          Vos tâches de maintenance apparaîtront ici.
+          Aucun entretien en attente. Votre maison est au top.
         </p>
       </div>
     );
   }
 
+  const overdueCount = grouped.get("overdue")?.length ?? 0;
+  const weekCount = grouped.get("thisWeek")?.length ?? 0;
+  const totalUpcoming = tasks.length;
+
   return (
     <div className="h-full overflow-y-auto bg-gray-50">
       <div className="px-4 pt-5 pb-4 space-y-5">
+        {/* Health score header */}
+        <div className="flex items-center gap-5 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <HealthRing score={healthScore} />
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-900 font-semibold text-sm">{getScoreMessage(healthScore)}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+              {overdueCount > 0 && (
+                <span className="text-xs text-red-500 font-medium">{overdueCount} en retard</span>
+              )}
+              {weekCount > 0 && (
+                <span className="text-xs text-[#f57c00] font-medium">{weekCount} cette sem.</span>
+              )}
+              <span className="text-xs text-gray-400">{totalUpcoming} au total</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Task groups */}
         {GROUP_ORDER.map((groupKey) => {
-          const groupTasks = grouped.get(groupKey);
-          if (!groupTasks || groupTasks.length === 0) return null;
+          const tasks = grouped.get(groupKey);
+          if (!tasks || tasks.length === 0) return null;
           const config = GROUP_CONFIG[groupKey];
 
           return (
@@ -173,63 +365,62 @@ export default function Maintenance() {
                 {config.label}
               </h2>
               <div className="space-y-2">
-                {groupTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`bg-white rounded-xl p-4 shadow-sm border ${
-                      groupKey === "overdue" ? "border-red-100" : "border-gray-100"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-gray-900 font-medium text-sm">{task.name}</p>
-                        {task.equipment_name && (
-                          <p className="text-gray-400 text-xs mt-0.5">{task.equipment_name}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {task.schedule_date && (
-                            <span className={`text-xs font-medium ${
-                              groupKey === "overdue" ? "text-red-500" : "text-[#f57c00]"
-                            }`}>
-                              {formatRelative(task.schedule_date)}
-                            </span>
-                          )}
-                          {task.maintenance_type && (
-                            <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                              task.maintenance_type === "preventive"
-                                ? "bg-blue-50 text-blue-500"
-                                : "bg-orange-50 text-orange-500"
-                            }`}>
-                              {task.maintenance_type === "preventive" ? "préventif" : "correctif"}
-                            </span>
-                          )}
+                {tasks.map((task) => {
+                  const Icon = getCategoryIcon(task.equipment_name);
+                  const equipName = cleanEquipmentName(task.equipment_name);
+
+                  return (
+                    <SwipeCard
+                      key={task.id}
+                      onSwipeRight={() => markDone(task.id)}
+                      onSwipeLeft={() => postpone(task)}
+                      canSwipeRight={!!repairedStageId}
+                    >
+                      <div
+                        className={`bg-white p-4 shadow-sm border select-none ${
+                          groupKey === "overdue" ? "border-red-100" : "border-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                            groupKey === "overdue" ? "bg-red-50" : "bg-gray-50"
+                          }`}>
+                            <Icon className={`w-[18px] h-[18px] ${
+                              groupKey === "overdue" ? "text-red-400" : "text-gray-400"
+                            }`} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-gray-900 font-medium text-sm leading-snug">{task.name}</p>
+                            {equipName && (
+                              <p className="text-gray-400 text-xs mt-0.5">{equipName}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {task.schedule_date && (
+                                <span className={`text-xs font-medium ${
+                                  groupKey === "overdue" ? "text-red-500" : "text-[#f57c00]"
+                                }`}>
+                                  {formatRelative(task.schedule_date)}
+                                </span>
+                              )}
+                              {task.maintenance_type && (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+                                  task.maintenance_type === "preventive"
+                                    ? "bg-blue-50 text-blue-500"
+                                    : "bg-orange-50 text-orange-500"
+                                }`}>
+                                  {task.maintenance_type === "preventive"
+                                    ? <><Shield className="w-2.5 h-2.5" />préventif</>
+                                    : <><AlertTriangle className="w-2.5 h-2.5" />correctif</>
+                                  }
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => postpone(task)}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-[#f57c00] hover:bg-orange-50 transition-colors"
-                          title="Reporter d'une semaine"
-                        >
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                          </svg>
-                        </button>
-                        {repairedStageId && (
-                          <button
-                            onClick={() => markDone(task.id)}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-green-500 hover:bg-green-50 transition-colors"
-                            title="Marquer comme fait"
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    </SwipeCard>
+                  );
+                })}
               </div>
             </div>
           );
