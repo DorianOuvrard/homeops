@@ -11,6 +11,7 @@ export default function Chat() {
   const [initialLoad, setInitialLoad] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const speechBaseRef = useRef("");
 
   useEffect(() => {
     api.chat
@@ -152,7 +153,17 @@ export default function Chat() {
           </button>
 
           <MicButton
-            onTranscript={(text) => setInput((prev) => (prev ? prev + " " + text : text))}
+            onListeningChange={(isListening) => {
+              if (isListening) {
+                speechBaseRef.current = input.trim();
+              } else {
+                speechBaseRef.current = "";
+              }
+            }}
+            onTranscript={(text) => {
+              const prefix = speechBaseRef.current ? `${speechBaseRef.current} ` : "";
+              setInput(`${prefix}${text}`.trim());
+            }}
             disabled={loading}
           />
 

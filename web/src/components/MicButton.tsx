@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface MicButtonProps {
-  onTranscript: (text: string) => void;
+  onTranscript: (text: string, isFinal: boolean) => void;
+  onListeningChange?: (listening: boolean) => void;
   disabled?: boolean;
 }
 
@@ -17,6 +18,7 @@ function MicIcon() {
 // Web Speech API types (not yet in all TS DOM libs)
 interface SpeechRecognitionResult {
   readonly length: number;
+  readonly isFinal: boolean;
   item(index: number): SpeechRecognitionAlternative;
   [index: number]: SpeechRecognitionAlternative;
 }
@@ -31,6 +33,7 @@ interface SpeechRecognitionResultList {
 }
 interface SpeechRecognitionEvent extends Event {
   readonly results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
 }
 interface SpeechRecognitionErrorEvent extends Event {
   readonly error: string;
@@ -63,7 +66,11 @@ function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export default function MicButton({ onTranscript, disabled }: MicButtonProps) {
+export default function MicButton({
+  onTranscript,
+  onListeningChange,
+  disabled,
+}: MicButtonProps) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
@@ -83,30 +90,42 @@ export default function MicButton({ onTranscript, disabled }: MicButtonProps) {
 
     const recognition = new SpeechRecognitionCtor();
     recognition.lang = "fr-FR";
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.continuous = false;
     recognitionRef.current = recognition;
 
-    recognition.onstart = () => setListening(true);
+    recognition.onstart = () => {
+      setListening(true);
+      onListeningChange?.(true);
+    };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript;
+      let transcript = "";
+      let isFinal = false;
+      for (let index = 0; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        transcript += result?.[0]?.transcript ?? "";
+        isFinal = isFinal || Boolean(result?.isFinal);
+      }
+      transcript = transcript.trim();
       if (transcript) {
-        onTranscript(transcript);
+        onTranscript(transcript, isFinal);
       }
     };
 
     recognition.onerror = () => {
       setListening(false);
+      onListeningChange?.(false);
     };
 
     recognition.onend = () => {
       setListening(false);
+      onListeningChange?.(false);
     };
 
     recognition.start();
-  }, [listening, onTranscript]);
+  }, [listening, onListeningChange, onTranscript]);
 
   if (!supported) return null;
 
