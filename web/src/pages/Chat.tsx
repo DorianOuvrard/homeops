@@ -12,7 +12,7 @@ interface DisplayMessage extends ChatMessage {
 const HODOR_IMAGE_URL =
   "https://funko.com/dw/image/v2/BGTS_PRD/on/demandware.static/-/Sites-funko-master-catalog/default/dw99acc27a/images/funko/45053-1.png?sh=800&sw=800";
 
-export default function Chat() {
+export default function Chat({ visible = true }: { visible?: boolean }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -198,6 +198,7 @@ export default function Chat() {
           </button>
 
           <MicButton
+            visible={visible}
             onListeningChange={(isListening) => {
               if (isListening) {
                 speechBaseRef.current = input.trim();

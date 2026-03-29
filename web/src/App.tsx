@@ -52,7 +52,7 @@ function PersistentTabs() {
         <Scan />
       </div>
       <div className="h-full" style={{ display: path === "/chat" ? undefined : "none" }}>
-        <Chat />
+        <Chat visible={path === "/chat"} />
       </div>
       <div className="h-full" style={{ display: path === "/settings" ? undefined : "none" }}>
         <Settings />

@@ -4,6 +4,7 @@ interface MicButtonProps {
   onTranscript: (text: string, isFinal: boolean) => void;
   onListeningChange?: (listening: boolean) => void;
   disabled?: boolean;
+  visible?: boolean;
 }
 
 function MicIcon() {
@@ -70,6 +71,7 @@ export default function MicButton({
   onTranscript,
   onListeningChange,
   disabled,
+  visible = true,
 }: MicButtonProps) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -77,6 +79,25 @@ export default function MicButton({
 
   useEffect(() => {
     setSupported(getSpeechRecognition() !== null);
+  }, []);
+
+  // Stop recognition when tab becomes hidden (CSS display:none)
+  // Browsers may silently kill SpeechRecognition without firing onend
+  useEffect(() => {
+    if (!visible && recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+      setListening(false);
+      onListeningChange?.(false);
+    }
+  }, [visible, onListeningChange]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
   }, []);
 
   const toggle = useCallback(() => {
