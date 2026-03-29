@@ -125,7 +125,7 @@ export default function BottomNav() {
           {({ isActive }) => (
             <>
               <BranIcon filled={isActive} />
-              <span>BRAN</span>
+              <span>CONNECT</span>
             </>
           )}
         </NavLink>
