@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, type Appliance, type ChatMessage } from "../api";
+import { api, type Appliance, type ChatMessage, type BranMetrics } from "../api";
 import MessageBubble from "../components/MessageBubble";
 import LoadingDots from "../components/LoadingDots";
+import Sparkline from "../components/Sparkline";
 
 function BackIcon() {
   return (
@@ -61,18 +62,25 @@ export default function ApplianceDetail() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [input, setInput] = useState("");
+  const [metrics, setMetrics] = useState<BranMetrics | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.appliances
       .get(equipmentId)
       .then(setAppliance)
-      .catch(() => navigate("/scan"))
+      .catch(() => navigate(-1))
       .finally(() => setLoading(false));
 
     api.appliances
       .chatHistory(equipmentId)
       .then(setMessages)
+      .catch(() => {});
+
+    api.bran
+      .metrics(equipmentId)
+      .then(setMetrics)
       .catch(() => {});
   }, [equipmentId]);
 
@@ -98,6 +106,15 @@ export default function ApplianceDetail() {
     }
   };
 
+  const handlePhotoUpload = async (file: File) => {
+    try {
+      const result = await api.appliances.uploadPhoto(equipmentId, file);
+      setAppliance((prev) => prev ? { ...prev, image_128: result.image_128 } : prev);
+    } catch (err) {
+      console.error("[ApplianceDetail] photo upload error:", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-50">
@@ -118,16 +135,39 @@ export default function ApplianceDetail() {
   return (
     <div className="flex flex-col h-full">
       {/* Header with image */}
+      <input
+        ref={photoRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) { handlePhotoUpload(file); e.target.value = ""; }
+        }}
+      />
       <div className="bg-[#1a237e] px-4 py-3 flex items-center gap-3 flex-shrink-0">
-        <button onClick={() => navigate("/scan")} className="text-white/70 hover:text-white">
+        <button onClick={() => navigate(-1)} className="text-white/70 hover:text-white">
           <BackIcon />
         </button>
-        {appliance?.image_128 && (
-          <img
-            src={appliance.image_128}
-            alt={appliance.name}
-            className="w-10 h-10 rounded-lg object-cover border-2 border-white/20"
-          />
+        {appliance?.image_128 ? (
+          <button onClick={() => photoRef.current?.click()} className="shrink-0">
+            <img
+              src={appliance.image_128}
+              alt={appliance.name}
+              className="w-10 h-10 rounded-lg object-cover border-2 border-white/20 hover:border-white/50 transition-colors"
+            />
+          </button>
+        ) : (
+          <button
+            onClick={() => photoRef.current?.click()}
+            className="w-10 h-10 rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center text-white/40 hover:border-white/60 hover:text-white/70 transition-colors shrink-0"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4z" />
+              <path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+            </svg>
+          </button>
         )}
         <div className="min-w-0 flex-1">
           <h1 className="text-white font-bold text-base leading-tight truncate">
@@ -166,6 +206,57 @@ export default function ApplianceDetail() {
             {!appliance.model && !appliance.serial_no && !appliance.vendor && !appliance.cost && (
               <p className="text-gray-300 text-xs italic py-1">Aucun détail renseigné</p>
             )}
+          </div>
+        )}
+
+        {/* Live metrics from Jeedom */}
+        {metrics && metrics.series.length > 0 && (
+          <div className="mx-4 mt-3 space-y-3">
+            <h2 className="text-gray-800 font-semibold text-sm">Capteurs en direct</h2>
+            {metrics.series.map((s) => {
+              const values = s.points.map((p) => p.value);
+              const min = values.length ? Math.min(...values) : 0;
+              const max = values.length ? Math.max(...values) : 0;
+              const baselineEnd = Math.floor(values.length * 0.8);
+              const baseline = values.slice(0, baselineEnd);
+              const bMean = baseline.length ? baseline.reduce((a, b) => a + b, 0) / baseline.length : 0;
+              const bStddev = baseline.length ? Math.sqrt(baseline.reduce((a, b) => a + (b - bMean) ** 2, 0) / baseline.length) : 0;
+              const isAnomaly = s.current != null && s.current > bMean + 2 * bStddev;
+              return (
+                <div
+                  key={s.cmd_id}
+                  className={`rounded-xl p-4 shadow-sm ${isAnomaly ? "bg-red-50/60 border border-red-100" : "bg-white"}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-xs">{s.name}</span>
+                      {isAnomaly && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                          anomalie
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`font-bold text-lg ${isAnomaly ? "text-red-600" : "text-gray-900"}`}>
+                        {s.current ?? "—"}
+                      </span>
+                      {s.unite && <span className="text-gray-400 text-xs">{s.unite}</span>}
+                    </div>
+                  </div>
+                  {values.length > 1 && (
+                    <>
+                      <Sparkline values={values} />
+                      <div className="flex justify-between mt-1.5">
+                        <span className="text-gray-300 text-[10px]">24h</span>
+                        <span className="text-gray-300 text-[10px]">
+                          min {min.toFixed(1)} / max {max.toFixed(1)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

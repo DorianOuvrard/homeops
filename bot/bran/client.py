@@ -57,6 +57,10 @@ class JeedomClient:
         """Push a value to an info command (useful for virtual devices)."""
         return self._call("cmd::event", {"id": str(cmd_id), "value": value})
 
+    def get_history(self, cmd_id: int) -> list[dict]:
+        """Get 24h history for a command. Returns [{"datetime": ..., "value": ...}, ...]."""
+        return self._call("cmd::getHistory", {"id": str(cmd_id)}) or []
+
     def list_objects(self) -> list[dict]:
         """List all Jeedom objects (rooms)."""
         return self._call("object::all") or []

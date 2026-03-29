@@ -95,7 +95,10 @@ DEVICES = [
     },
 ]
 
-# Anomaly state: set to a cmd_id to simulate a spike
+# Persistent anomalies for demo (cmd_id -> multiplier)
+_demo_anomalies: dict[int, float] = {102: 3.0, 401: 1.6}
+
+# Dynamic anomaly state (set via mock::triggerAnomaly)
 _anomaly_cmd: int | None = None
 _anomaly_multiplier: float = 1.0
 
@@ -115,7 +118,9 @@ def get_current_value(cmd: dict) -> str:
     noise = random.gauss(0, variance * 0.2)
     value = base + drift + noise
 
-    # Apply anomaly if active
+    # Apply anomalies (demo persistent + dynamic)
+    if cmd_id in _demo_anomalies:
+        value *= _demo_anomalies[cmd_id]
     if _anomaly_cmd == cmd_id:
         value *= _anomaly_multiplier
 
@@ -229,6 +234,43 @@ def handle_rpc(method: str, params: dict) -> object:
         _anomaly_multiplier = 1.0
         print("  ANOMALY cleared")
         return "anomaly_cleared"
+
+    if method == "cmd::getHistory":
+        cmd_id = int(params.get("id", 0))
+        target_cmd = None
+        for d in DEVICES:
+            for c in d["commands"]:
+                if c["id"] == cmd_id:
+                    target_cmd = c
+                    break
+        if not target_cmd or target_cmd["subType"] != "numeric":
+            return []
+        # Generate 24h of history (every 10 min = 144 points)
+        now = time.time()
+        points = []
+        base = target_cmd["base_value"]
+        variance = target_cmd["variance"]
+        # Anomaly injection: sharp spike in the last ~15 points
+        # 102 = Clim consumption, 401 = Chauffe-eau temperature
+        anomaly_cmds = {102: 3.0, 401: 1.6}
+        anomaly_start = 130  # point index where anomaly begins
+        for i in range(144):
+            t = now - (143 - i) * 600
+            drift = math.sin(t / 30 + cmd_id) * variance * 0.5
+            noise = random.gauss(0, variance * 0.15)
+            val = base + drift + noise
+            # Ramp up anomaly progressively
+            if cmd_id in anomaly_cmds and i >= anomaly_start:
+                progress = (i - anomaly_start) / (144 - anomaly_start)
+                multiplier = 1 + (anomaly_cmds[cmd_id] - 1) * progress
+                val *= multiplier
+            if target_cmd["unite"] in ("°C", "g"):
+                val = round(val, 1)
+            else:
+                val = max(0, int(val))
+            dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
+            points.append({"datetime": dt, "value": str(val)})
+        return points
 
     if method == "plugin::listPlugin":
         return [{"id": "virtual", "name": "Virtual", "isEnable": 1}]

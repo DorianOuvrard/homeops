@@ -96,6 +96,7 @@ class BranDeviceResponse(BaseModel):
     commands: list[BranDeviceCommand] = []
     linked_equipment_id: int | None = None
     linked_equipment_name: str | None = None
+    is_new: bool = False  # freshly created in Odoo during this scan
 
 
 class BranStatusResponse(BaseModel):
@@ -104,8 +105,23 @@ class BranStatusResponse(BaseModel):
     jeedom_url: str | None = None
 
 
-class BranLinkRequest(BaseModel):
+class BranMetricPoint(BaseModel):
+    datetime: str
+    value: float
+
+
+class BranMetricSeries(BaseModel):
+    cmd_id: int
+    name: str
+    unite: str | None = None
+    current: float | None = None
+    points: list[BranMetricPoint] = []
+
+
+class BranMetricsResponse(BaseModel):
     equipment_id: int
+    device_name: str
+    series: list[BranMetricSeries] = []
 
 
 class PushSubscriptionKeys(BaseModel):
