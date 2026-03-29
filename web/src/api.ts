@@ -20,7 +20,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith("/auth/")) {
     localStorage.removeItem("hodoor_token");
     window.location.href = "/login";
     throw new Error("Unauthorized");
@@ -106,6 +106,32 @@ export interface MaintenanceStage {
   name: string;
 }
 
+export interface BranDeviceCommand {
+  id: number;
+  name: string;
+  type: string;
+  subtype?: string;
+  value?: string;
+  unite?: string;
+}
+
+export interface BranDevice {
+  id: number;
+  name: string;
+  is_enable: boolean;
+  object_name?: string;
+  eq_type?: string;
+  commands: BranDeviceCommand[];
+  linked_equipment_id?: number;
+  linked_equipment_name?: string;
+}
+
+export interface BranStatus {
+  connected: boolean;
+  device_count: number;
+  jeedom_url?: string;
+}
+
 export interface PushSubscriptionPayload {
   endpoint: string;
   keys: {
@@ -165,6 +191,22 @@ export const api = {
         body: JSON.stringify(data),
       }),
     stages: () => request<MaintenanceStage[]>("/maintenance/stages"),
+  },
+  bran: {
+    status: () => request<BranStatus>("/bran/status"),
+    devices: () => request<BranDevice[]>("/bran/devices"),
+    link: (jeedomDeviceId: number, equipmentId: number) =>
+      request<{ ok: boolean }>(`/bran/link/${jeedomDeviceId}`, {
+        method: "POST",
+        body: JSON.stringify({ equipment_id: equipmentId }),
+      }),
+    unlink: (jeedomDeviceId: number) =>
+      request<{ ok: boolean }>(`/bran/link/${jeedomDeviceId}`, { method: "DELETE" }),
+    import: (jeedomDeviceId: number) =>
+      request<{ ok: boolean; equipment_id: number; equipment_name: string }>(
+        `/bran/import/${jeedomDeviceId}`,
+        { method: "POST" },
+      ),
   },
   push: {
     getVapidPublicKey: () => request<{ public_key: string }>("/push/vapid-public-key"),
