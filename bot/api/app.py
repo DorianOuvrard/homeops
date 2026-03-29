@@ -101,6 +101,11 @@ def create_app(config, shared_deps: dict) -> FastAPI:
 
     fastapi_app.include_router(api)
 
+    # Serve uploaded photos/audio (mounted on main app so catch-all doesn't intercept)
+    _uploads = Path("data/uploads")
+    _uploads.mkdir(parents=True, exist_ok=True)
+    fastapi_app.mount("/api/v1/uploads", StaticFiles(directory=str(_uploads)), name="uploads")
+
     # Serve React PWA from web/dist if it exists
     if _WEB_DIST.exists():
         # Serve static assets (JS, CSS, images)
@@ -111,6 +116,10 @@ def create_app(config, shared_deps: dict) -> FastAPI:
         # SPA catch-all: serve index.html for any non-API route
         @fastapi_app.get("/{path:path}")
         async def spa_catchall(request: Request, path: str):
+            # Never intercept API routes (let FastAPI/StaticFiles handle them)
+            if path.startswith("api/"):
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
             # Serve actual files if they exist (manifest.json, sw.js, etc.)
             file_path = _WEB_DIST / path
             if file_path.is_file():
