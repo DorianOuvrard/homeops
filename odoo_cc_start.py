@@ -24,9 +24,10 @@ def _cc_db_exist(db_name):
 def _cc_create_empty_database(name):
     """Initialize extensions in the existing CC database."""
     db = odoo.sql_db.db_connect(name)
-    with db.cursor() as cr:
-        cr.autocommit(True)
-        cr.execute("CREATE EXTENSION IF NOT EXISTS unaccent")
+    conn = db.cursor()
+    conn._obj.connection.autocommit = True
+    conn.execute("CREATE EXTENSION IF NOT EXISTS unaccent")
+    conn.close()
 
 
 db_service.db_exist = _cc_db_exist
