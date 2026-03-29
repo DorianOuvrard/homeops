@@ -3,6 +3,7 @@ FROM odoo:17.0
 USER root
 COPY --chmod=755 odoo-entrypoint-cc.sh /usr/local/bin/odoo-entrypoint-cc.sh
 COPY --chmod=644 odoo_cc_start.py /usr/local/bin/odoo_cc_start.py
+COPY odoo_addons/ /mnt/extra-addons/
 USER odoo
 
 ENTRYPOINT ["/usr/local/bin/odoo-entrypoint-cc.sh"]
