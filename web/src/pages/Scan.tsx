@@ -13,9 +13,6 @@ export default function Scan() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
-  const [tipOpen, setTipOpen] = useState(
-    () => localStorage.getItem("scan_tip_dismissed") !== "true",
-  );
   const [cameraActive, setCameraActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -312,7 +309,7 @@ export default function Scan() {
         )}
 
         {/* Appliance list */}
-        <div className="px-4 pt-5 pb-4">
+        <div className="px-4 pt-5 pb-20">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[#3d3833] font-bold text-sm uppercase tracking-wide">
               Historique récent
@@ -342,7 +339,7 @@ export default function Scan() {
       </div>
 
       {/* Floating "Generate plan" button */}
-      {appliances.length > 0 && messages.length === 0 && !tipOpen && (
+      {appliances.length > 0 && messages.length === 0 && (
         <div className="absolute bottom-2 left-3 right-3 z-20">
           <button
             onClick={() => {
@@ -359,37 +356,6 @@ export default function Scan() {
         </div>
       )}
 
-      {/* Floating Pro tip */}
-      {tipOpen && (
-        <div className="absolute bottom-2 left-3 right-3 z-20">
-          <div className="bg-[#fdf6ef] rounded-xl p-3.5 border-l-4 border-[#d4915e] shadow-lg flex gap-3 items-start">
-            <div className="shrink-0 mt-0.5">
-              <svg viewBox="0 0 24 24" fill="#d4915e" className="w-5 h-5">
-                <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[#d4915e] font-bold text-xs uppercase tracking-wide mb-1">
-                Conseil Pro
-              </p>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Assurez-vous qu&apos;il y a assez de lumière pour une lecture optimale des petits caractères.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setTipOpen(false);
-                localStorage.setItem("scan_tip_dismissed", "true");
-              }}
-              className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
