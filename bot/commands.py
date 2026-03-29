@@ -41,23 +41,14 @@ def cmd_scan(
     odoo: OdooClient,
 ) -> str:
     history.clear(user_id)
+    count = 0
     for model in ("maintenance.request", "maintenance.equipment"):
         result = odoo.search_records(model, domain=[], fields=["id"], limit=50)
         for rec in result.get("records", []):
             odoo.delete_record(model, rec["id"])
+            count += 1
     session.force_onboarding(user_id)
-    trigger_msg = "Salut"
-    history.add_user(user_id, trigger_msg)
-    reply = get_response(
-        trigger_msg,
-        config,
-        odoo,
-        history=[],
-        system_prompt=config.onboarding_prompt,
-        on_mode_change=session.mode_callback(user_id),
-    )
-    history.add_assistant(user_id, reply)
-    return reply
+    return f"Scan reset: {count} enregistrement(s) supprimé(s). Rechargement..."
 
 
 def cmd_plan(

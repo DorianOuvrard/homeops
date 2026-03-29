@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type ChatMessage } from "../api";
+import { api, type Appliance, type ChatMessage } from "../api";
 import { useAppContext } from "../AppContext";
 import MessageBubble from "../components/MessageBubble";
 import LoadingDots from "../components/LoadingDots";
@@ -8,19 +8,21 @@ import MicButton from "../components/MicButton";
 interface DisplayMessage extends ChatMessage {
   imageUrl?: string;
   audioUrl?: string;
+  toolsUsed?: string[];
 }
 
 const HODOR_IMAGE_URL =
   "https://funko.com/dw/image/v2/BGTS_PRD/on/demandware.static/-/Sites-funko-master-catalog/default/dw99acc27a/images/funko/45053-1.png?sh=800&sw=800";
 
 const WELCOME_MESSAGES: DisplayMessage[] = [
-  { role: "assistant", content: "Salut ! Moi c'est Hodoor \ud83d\udc4b" },
-  { role: "assistant", content: "Je suis ton assistant maison. Je vais t'aider à inventorier tes appareils et anticiper leur entretien." },
-  { role: "assistant", content: "Envoie-moi une photo de chaque appareil (l'étiquette c'est l'idéal). Si tu connais la date d'achat, ajoute-la en légende !" },
+  { role: "assistant", content: "Salut ! Moi c'est Hodoor" },
+  { role: "assistant", content: "Je gère l'entretien de ta maison. Commence par me montrer tes appareils." },
+  { role: "assistant", content: "Prends en photo l'étiquette technique (marque, modèle, serial). Pas d'étiquette ? L'appareil seul suffit, je me débrouille." },
 ];
 
 export default function Chat({ visible = true }: { visible?: boolean }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -41,6 +43,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
       })
       .catch(() => {})
       .finally(() => setInitialLoad(false));
+    api.appliances.list().then(setAppliances).catch(() => {});
   }, []);
 
   // Stagger welcome messages when no history
@@ -81,13 +84,18 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
     if (text.trim().toLowerCase() === "hold the door") {
       triggerHodor();
     }
+    const isSlashReload = text.trim().toLowerCase().startsWith("/scan") || text.trim().toLowerCase().startsWith("/reset");
     const userMsg: DisplayMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
     try {
       const res = await api.chat.send(text);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined }]);
+      if (isSlashReload) {
+        window.location.reload();
+        return;
+      }
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined, toolsUsed: res.tools_used }]);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -120,7 +128,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
     setLoading(true);
     try {
       const res = await api.chat.sendPhoto(caption || "Analyse cette photo.", file);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined, toolsUsed: res.tools_used }]);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -139,7 +147,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#faf8f5]">
+    <div className="flex flex-col h-full bg-[#faf8f5] relative">
       {showHodor && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/20">
           <img
@@ -151,7 +159,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+      <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-1 ${appliances.length >= 3 && !loading ? "pb-20" : ""}`}>
         {initialLoad ? (
           <div className="flex justify-center py-8">
             <span className="text-gray-400 text-sm">Chargement...</span>
@@ -165,12 +173,27 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
           </>
         ) : (
           messages.map((m, i) => (
-            <MessageBubble key={i} role={m.role} content={m.content} imageUrl={m.imageUrl} audioUrl={m.audioUrl} />
+            <MessageBubble key={i} role={m.role} content={m.content} imageUrl={m.imageUrl} audioUrl={m.audioUrl} toolsUsed={m.toolsUsed} />
           ))
         )}
         {loading && <LoadingDots />}
         <div ref={bottomRef} />
       </div>
+
+      {/* Generate plan button */}
+      {appliances.length >= 3 && !loading && (
+        <div className="px-3 pb-2 shrink-0">
+          <button
+            onClick={() => sendText("J'ai fini, fais le récap et le plan de prévention")}
+            className="w-full bg-[#c45d3e] text-white rounded-xl py-3 font-semibold text-sm shadow-sm flex items-center justify-center gap-2 hover:bg-[#a84e34] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+            </svg>
+            Générer mon plan d'entretien
+          </button>
+        </div>
+      )}
 
       {/* Input bar */}
       <input

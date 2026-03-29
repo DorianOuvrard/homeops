@@ -17,10 +17,10 @@ export default function Header() {
       <button
         type="button"
         onClick={speakHodor}
-        className="text-[#c45d3e] font-bold text-lg tracking-wide"
+        className="flex items-center gap-2 text-[#c45d3e] font-bold text-lg tracking-wide"
         title="Ecouter Hodor"
       >
-        HODOOR
+        <img src="/hodoor-logo.png" alt="Hodoor" className="h-8 object-contain" />
       </button>
     </div>
   );

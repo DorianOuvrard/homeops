@@ -316,7 +316,7 @@ export default function Scan() {
       </div>
 
       {/* Floating "Generate plan" button */}
-      {appliances.length > 0 && !loadingChat && (
+      {appliances.length >= 3 && !loadingChat && (
         <div className="absolute bottom-2 left-3 right-3 z-20">
           <button
             onClick={() => {

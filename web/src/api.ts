@@ -60,6 +60,7 @@ export interface ChatResponse {
   reply: string;
   timestamp: string;
   audio_url: string | null;
+  tools_used?: string[];
 }
 
 export interface Appliance {

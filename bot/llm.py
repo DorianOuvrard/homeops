@@ -20,7 +20,7 @@ def get_response(
     system_prompt: str | None = None,
     on_mode_change=None,
     on_tool_round=None,
-) -> str:
+) -> str | tuple[str, list[str]]:
     """Send text (and optionally images) to OpenAI and return the reply.
 
     Supports tool calling: if the model requests a tool, we execute it
@@ -42,6 +42,8 @@ def get_response(
         messages.extend(history)
     messages.append({"role": "user", "content": user_content})
 
+    tools_used: list[str] = []
+
     try:
         for round_num in range(_MAX_TOOL_ROUNDS):
             completion = client.chat.completions.create(
@@ -54,7 +56,8 @@ def get_response(
             if not msg.tool_calls:
                 logger.info("Response after %d tool round(s)", round_num)
                 logger.info("LLM reply: %.300s", msg.content)
-                return msg.content or "(empty response)"
+                reply = msg.content or "(empty response)"
+                return (reply, tools_used) if tools_used else reply
 
             messages.append(msg)
 
@@ -63,6 +66,7 @@ def get_response(
 
             for tc in msg.tool_calls:
                 logger.info("Round %d: %s(%s)", round_num + 1, tc.function.name, tc.function.arguments)
+                tools_used.append(tc.function.name)
                 result = dispatch(config, odoo, tc.function.name, tc.function.arguments, on_mode_change=on_mode_change, image_urls=image_urls)
                 messages.append({
                     "role": "tool",

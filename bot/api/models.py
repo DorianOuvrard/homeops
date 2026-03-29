@@ -31,6 +31,7 @@ class ChatMessageResponse(BaseModel):
     reply: str
     timestamp: str
     audio_url: str | None = None
+    tools_used: list[str] = []
 
 
 class ChatHistoryItem(BaseModel):

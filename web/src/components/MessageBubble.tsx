@@ -5,6 +5,7 @@ interface MessageBubbleProps {
   content: string;
   imageUrl?: string;
   audioUrl?: string;
+  toolsUsed?: string[];
 }
 
 function formatTime(): string {
@@ -69,7 +70,30 @@ function PlayButton({ audioUrl }: { audioUrl: string }) {
   );
 }
 
-export default function MessageBubble({ role, content, imageUrl, audioUrl }: MessageBubbleProps) {
+const TOOL_LABELS: Record<string, string> = {
+  search_records: "Recherche Odoo",
+  create_record: "Création Odoo",
+  update_record: "Mise à jour Odoo",
+  get_record: "Lecture Odoo",
+  delete_record: "Suppression Odoo",
+  search_product_docs: "Recherche docs",
+  search_common_issues: "Pannes connues",
+  set_mode: "Changement mode",
+  list_models: "Modèles Odoo",
+  get_fields: "Champs Odoo",
+};
+
+function dedupeTools(tools: string[]): string[] {
+  const seen = new Map<string, number>();
+  for (const t of tools) {
+    seen.set(t, (seen.get(t) ?? 0) + 1);
+  }
+  return [...seen.entries()].map(([name, count]) =>
+    count > 1 ? `${name}×${count}` : name
+  );
+}
+
+export default function MessageBubble({ role, content, imageUrl, audioUrl, toolsUsed }: MessageBubbleProps) {
   const isUser = role === "user";
   const time = formatTime();
 
@@ -100,6 +124,25 @@ export default function MessageBubble({ role, content, imageUrl, audioUrl }: Mes
             }`}
           >
             {displayText}
+          </div>
+        )}
+
+        {/* Tool badges */}
+        {!isUser && toolsUsed && toolsUsed.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5 px-1">
+            {dedupeTools(toolsUsed).map((tool, i) => {
+              const baseName = tool.replace(/×\d+$/, "");
+              const label = TOOL_LABELS[baseName] ?? baseName;
+              const suffix = tool.includes("×") ? ` ${tool.slice(tool.indexOf("×"))}` : "";
+              return (
+                <span
+                  key={i}
+                  className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#b5ada5]"
+                >
+                  {label}{suffix}
+                </span>
+              );
+            })}
           </div>
         )}
 

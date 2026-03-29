@@ -88,7 +88,14 @@ def _build_anomaly_summary(config) -> str:
     return ""
 
 
-def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_id: str) -> str:
+def _unpack_response(result) -> tuple[str, list[str]]:
+    """Unpack get_response return: str or (str, list[str])."""
+    if isinstance(result, tuple):
+        return result[0], result[1]
+    return result, []
+
+
+def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_id: str) -> tuple[str, list[str]]:
     """Run get_response in a thread pool to avoid blocking the event loop."""
     from bot.llm import get_response
     from bot import session
@@ -107,7 +114,7 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
     past = history_obj.get(user_id)
     session.detect_onboarding(user_id, past, odoo)
     history_obj.add_user(user_id, f"[photo] {text}" if image_urls else text)
-    reply = get_response(
+    result = get_response(
         enriched_text,
         config,
         odoo,
@@ -116,11 +123,12 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
         system_prompt=session.get_system_prompt(user_id, config),
         on_mode_change=session.mode_callback(user_id),
     )
+    reply, tools = _unpack_response(result)
     history_obj.add_assistant(user_id, reply)
-    return reply
+    return reply, tools
 
 
-def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_id: str) -> str:
+def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_id: str) -> tuple[str, list[str]]:
     """Like _run_get_response but history already has the user message (with image path)."""
     from bot.llm import get_response
     from bot import session
@@ -131,7 +139,7 @@ def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_i
 
     past = history_obj.get(user_id)
     session.detect_onboarding(user_id, past, odoo)
-    reply = get_response(
+    result = get_response(
         text,
         config,
         odoo,
@@ -140,8 +148,9 @@ def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_i
         system_prompt=session.get_system_prompt(user_id, config),
         on_mode_change=session.mode_callback(user_id),
     )
+    reply, tools = _unpack_response(result)
     history_obj.add_assistant(user_id, reply)
-    return reply
+    return reply, tools
 
 
 @router.post("/message", response_model=ChatMessageResponse)
@@ -173,7 +182,7 @@ async def send_message(body: ChatMessageRequest, current_user: CurrentUser):
             )
 
     try:
-        reply = await asyncio.get_event_loop().run_in_executor(
+        reply, tools = await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: _run_get_response(deps, body.text, None, user_id),
         )
@@ -188,6 +197,7 @@ async def send_message(body: ChatMessageRequest, current_user: CurrentUser):
         reply=reply,
         timestamp=datetime.now(UTC).isoformat(),
         audio_url=audio_url,
+        tools_used=tools,
     )
 
 
@@ -228,7 +238,7 @@ async def send_photo_message(
     image_url = f"data:{mime};base64,{b64}"
 
     try:
-        reply = await asyncio.get_event_loop().run_in_executor(
+        reply, tools = await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: _run_get_response_photo(deps, text, [image_url], user_id),
         )
@@ -243,6 +253,7 @@ async def send_photo_message(
         reply=reply,
         timestamp=datetime.now(UTC).isoformat(),
         audio_url=audio_url,
+        tools_used=tools,
     )
 
 

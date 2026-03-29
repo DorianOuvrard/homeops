@@ -325,10 +325,21 @@ export default function Maintenance() {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-[#faf8f5] px-8 text-center">
         <HealthRing score={100} />
-        <p className="text-[#5a524b] font-semibold text-base mt-4">Tout est en ordre</p>
-        <p className="text-[#b5ada5] text-sm mt-1">
-          Aucun entretien en attente. Votre maison est au top.
+        <p className="text-[#5a524b] font-semibold text-lg mt-5">Maison au top</p>
+        <p className="text-[#b5ada5] text-sm mt-1.5 max-w-[260px] leading-relaxed">
+          Aucun entretien planifié. Scannez vos appareils puis générez un plan de prévention.
         </p>
+        <div className="mt-8 flex items-center gap-3 text-[#b5ada5]">
+          <div className="flex items-center gap-1.5 text-xs">
+            <Shield className="w-3.5 h-3.5 text-[#7a9e7e]" />
+            <span>Préventif</span>
+          </div>
+          <span className="text-[#e0dbd5]">|</span>
+          <div className="flex items-center gap-1.5 text-xs">
+            <AlertTriangle className="w-3.5 h-3.5 text-[#d4915e]" />
+            <span>Correctif</span>
+          </div>
+        </div>
       </div>
     );
   }
