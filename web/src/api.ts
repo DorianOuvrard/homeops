@@ -192,6 +192,7 @@ export const api = {
     },
     history: () => request<ChatMessage[]>("/chat/history"),
     clearHistory: () => request<void>("/chat/history", { method: "DELETE" }),
+    toolsInflight: () => request<{ tools: string[] }>("/chat/tools-inflight"),
   },
   appliances: {
     list: () => request<Appliance[]>("/appliances"),

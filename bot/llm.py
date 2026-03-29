@@ -20,6 +20,7 @@ def get_response(
     system_prompt: str | None = None,
     on_mode_change=None,
     on_tool_round=None,
+    on_tool_call=None,
 ) -> str | tuple[str, list[str]]:
     """Send text (and optionally images) to OpenAI and return the reply.
 
@@ -67,6 +68,8 @@ def get_response(
             for tc in msg.tool_calls:
                 logger.info("Round %d: %s(%s)", round_num + 1, tc.function.name, tc.function.arguments)
                 tools_used.append(tc.function.name)
+                if on_tool_call:
+                    on_tool_call(tc.function.name)
                 result = dispatch(config, odoo, tc.function.name, tc.function.arguments, on_mode_change=on_mode_change, image_urls=image_urls)
                 messages.append({
                     "role": "tool",

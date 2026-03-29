@@ -15,6 +15,9 @@ from bot.api.models import ChatHistoryItem, ChatMessageRequest, ChatMessageRespo
 UPLOADS_DIR = Path("data/uploads")
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+# In-flight tool calls per user (for live progress polling)
+_inflight_tools: dict[str, list[str]] = {}
+
 
 async def _generate_audio(reply: str, config) -> str | None:
     """Generate TTS audio (MP3) for a reply, save to disk, return URL or None."""
@@ -50,7 +53,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 def _build_anomaly_summary(config) -> str:
-    """Build a summary of current Jeedom anomalies for LLM context."""
+    """Build a summary of current Jeedom anomalies for LLM context.
+
+    Only considers devices that are linked to an Odoo equipment
+    (i.e. already in the user's inventory).
+    """
     try:
         from bot.bran.api import _links, _get_jeedom
         import statistics
@@ -60,6 +67,8 @@ def _build_anomaly_summary(config) -> str:
         devices = jeedom.list_devices()
         for device in devices:
             if not device.get("isEnable", 1):
+                continue
+            if device["id"] not in _links:
                 continue
             cmds = jeedom.get_commands(device["id"])
             for cmd in cmds:
@@ -95,6 +104,14 @@ def _unpack_response(result) -> tuple[str, list[str]]:
     return result, []
 
 
+def _make_tool_tracker(user_id: str):
+    """Create a callback that tracks tool calls in real-time."""
+    _inflight_tools[user_id] = []
+    def on_tool_call(name: str):
+        _inflight_tools.setdefault(user_id, []).append(name)
+    return on_tool_call
+
+
 def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_id: str) -> tuple[str, list[str]]:
     """Run get_response in a thread pool to avoid blocking the event loop."""
     from bot.llm import get_response
@@ -104,26 +121,22 @@ def _run_get_response(deps: dict, text: str, image_urls: list[str] | None, user_
     config = deps["config"]
     odoo = deps["odoo"]
 
-    # Inject Jeedom anomaly context for plan/recap requests
-    enriched_text = text
-    if any(kw in text.lower() for kw in ["plan", "récap", "recap", "prévention", "prevention", "entretien"]):
-        anomaly_summary = _build_anomaly_summary(config)
-        if anomaly_summary:
-            enriched_text = f"{anomaly_summary}\n\n{text}"
-
+    tracker = _make_tool_tracker(user_id)
     past = history_obj.get(user_id)
     session.detect_onboarding(user_id, past, odoo)
     history_obj.add_user(user_id, f"[photo] {text}" if image_urls else text)
     result = get_response(
-        enriched_text,
+        text,
         config,
         odoo,
         image_urls=image_urls,
         history=past,
-        system_prompt=session.get_system_prompt(user_id, config),
+        system_prompt=session.get_system_prompt(user_id, config, odoo),
         on_mode_change=session.mode_callback(user_id),
+        on_tool_call=tracker,
     )
     reply, tools = _unpack_response(result)
+    _inflight_tools.pop(user_id, None)
     history_obj.add_assistant(user_id, reply)
     return reply, tools
 
@@ -137,6 +150,7 @@ def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_i
     config = deps["config"]
     odoo = deps["odoo"]
 
+    tracker = _make_tool_tracker(user_id)
     past = history_obj.get(user_id)
     session.detect_onboarding(user_id, past, odoo)
     result = get_response(
@@ -145,10 +159,12 @@ def _run_get_response_photo(deps: dict, text: str, image_urls: list[str], user_i
         odoo,
         image_urls=image_urls,
         history=past,
-        system_prompt=session.get_system_prompt(user_id, config),
+        system_prompt=session.get_system_prompt(user_id, config, odoo),
         on_mode_change=session.mode_callback(user_id),
+        on_tool_call=tracker,
     )
     reply, tools = _unpack_response(result)
+    _inflight_tools.pop(user_id, None)
     history_obj.add_assistant(user_id, reply)
     return reply, tools
 
@@ -255,6 +271,13 @@ async def send_photo_message(
         audio_url=audio_url,
         tools_used=tools,
     )
+
+
+@router.get("/tools-inflight")
+async def get_inflight_tools(current_user: CurrentUser):
+    """Poll current in-flight tool calls for live progress."""
+    tools = _inflight_tools.get(current_user.id, [])
+    return {"tools": list(tools)}
 
 
 @router.get("/history", response_model=list[ChatHistoryItem])

@@ -57,9 +57,20 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
     return () => clearTimeout(timer);
   }, [initialLoad, messages.length, welcomeShown]);
 
+  const [inflightTools, setInflightTools] = useState<string[]>([]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, inflightTools]);
+
+  // Poll in-flight tool calls during loading
+  useEffect(() => {
+    if (!loading) { setInflightTools([]); return; }
+    const poll = setInterval(() => {
+      api.chat.toolsInflight().then((r) => setInflightTools(r.tools)).catch(() => {});
+    }, 1500);
+    return () => clearInterval(poll);
+  }, [loading]);
 
   useEffect(() => {
     return () => {
@@ -80,13 +91,22 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
     }, 2200);
   };
 
+  // Prepend welcome messages when first real message is sent
+  const ensureWelcomeInHistory = () => {
+    if (messages.length === 0 && welcomeShown > 0) {
+      return [...WELCOME_MESSAGES.slice(0, welcomeShown)];
+    }
+    return [];
+  };
+
   const sendText = async (text: string) => {
     if (text.trim().toLowerCase() === "hold the door") {
       triggerHodor();
     }
     const isSlashReload = text.trim().toLowerCase().startsWith("/scan") || text.trim().toLowerCase().startsWith("/reset");
+    const welcome = ensureWelcomeInHistory();
     const userMsg: DisplayMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...welcome, ...prev, userMsg]);
     setInput("");
     setLoading(true);
     try {
@@ -96,6 +116,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
         return;
       }
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined, toolsUsed: res.tools_used }]);
+      api.appliances.list().then(setAppliances).catch(() => {});
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -118,17 +139,19 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
   const sendPhoto = async (file: File) => {
     const imageUrl = URL.createObjectURL(file);
     const caption = input.trim();
+    const welcome = ensureWelcomeInHistory();
     const userMsg: DisplayMessage = {
       role: "user",
       content: caption,
       imageUrl,
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...welcome, ...prev, userMsg]);
     setInput("");
     setLoading(true);
     try {
       const res = await api.chat.sendPhoto(caption || "Analyse cette photo.", file);
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined, toolsUsed: res.tools_used }]);
+      api.appliances.list().then(setAppliances).catch(() => {});
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -176,7 +199,20 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
             <MessageBubble key={i} role={m.role} content={m.content} imageUrl={m.imageUrl} audioUrl={m.audioUrl} toolsUsed={m.toolsUsed} />
           ))
         )}
-        {loading && <LoadingDots />}
+        {loading && (
+          <div>
+            <LoadingDots />
+            {inflightTools.length > 0 && (
+              <div className="flex flex-wrap gap-1 ml-1 -mt-1 mb-2">
+                {inflightTools.map((t, i) => (
+                  <span key={i} className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#b5ada5] animate-pulse">
+                    {t.replace("search_records", "Recherche Odoo").replace("create_record", "Création Odoo").replace("update_record", "MAJ Odoo").replace("get_record", "Lecture Odoo").replace("search_product_docs", "Docs produit").replace("search_common_issues", "Pannes connues").replace("set_mode", "Mode")}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
