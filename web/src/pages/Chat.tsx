@@ -12,12 +12,19 @@ interface DisplayMessage extends ChatMessage {
 const HODOR_IMAGE_URL =
   "https://funko.com/dw/image/v2/BGTS_PRD/on/demandware.static/-/Sites-funko-master-catalog/default/dw99acc27a/images/funko/45053-1.png?sh=800&sw=800";
 
+const WELCOME_MESSAGES: DisplayMessage[] = [
+  { role: "assistant", content: "Salut ! Moi c'est Hodoor \ud83d\udc4b" },
+  { role: "assistant", content: "Je suis ton assistant maison. Je vais t'aider à inventorier tes appareils et anticiper leur entretien." },
+  { role: "assistant", content: "Envoie-moi une photo de chaque appareil (l'étiquette c'est l'idéal). Si tu connais la date d'achat, ajoute-la en légende !" },
+];
+
 export default function Chat({ visible = true }: { visible?: boolean }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [showHodor, setShowHodor] = useState(false);
+  const [welcomeShown, setWelcomeShown] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const speechBaseRef = useRef("");
@@ -26,10 +33,24 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
   useEffect(() => {
     api.chat
       .history()
-      .then(setMessages)
+      .then((history) => {
+        setMessages(history);
+        if (history.length > 0) setWelcomeShown(WELCOME_MESSAGES.length);
+      })
       .catch(() => {})
       .finally(() => setInitialLoad(false));
   }, []);
+
+  // Stagger welcome messages when no history
+  // Delays based on reading time of the previous message
+  const welcomeDelays = [500, 1500, 2500];
+  useEffect(() => {
+    if (initialLoad || messages.length > 0 || welcomeShown >= WELCOME_MESSAGES.length) return;
+    const timer = setTimeout(() => {
+      setWelcomeShown((n) => n + 1);
+    }, welcomeDelays[welcomeShown]);
+    return () => clearTimeout(timer);
+  }, [initialLoad, messages.length, welcomeShown]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -126,33 +147,12 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
             <span className="text-gray-400 text-sm">Chargement...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            {/* Pulsing voice circle with glow */}
-            <div className="relative w-44 h-44 mb-8 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-[#c5cae9]/30 voice-pulse-outer" />
-              <div className="absolute inset-4 rounded-full bg-[#9fa8da]/30 voice-pulse" />
-              <div className="absolute inset-8 rounded-full bg-[#7986cb]/20" />
-              <div className="relative w-24 h-24 rounded-full bg-linear-to-br from-[#1a237e] to-[#283593] flex items-center justify-center shadow-xl">
-                {/* Sound wave bars */}
-                <div className="flex items-center gap-0.75">
-                  <span className="w-0.75 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
-                  <span className="w-0.75 h-6 bg-white rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
-                  <span className="w-0.75 h-8 bg-white rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
-                  <span className="w-0.75 h-6 bg-white rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
-                  <span className="w-0.75 h-4 bg-white rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
-                </div>
-              </div>
-            </div>
-            <p className="text-[#f57c00] font-semibold text-xs tracking-[0.25em] uppercase mb-3">
-              En écoute
-            </p>
-            <p className="text-gray-800 font-bold text-xl">
-              Comment puis-je
-            </p>
-            <p className="text-gray-800 font-bold text-xl">
-              vous aider ?
-            </p>
-          </div>
+          <>
+            {WELCOME_MESSAGES.slice(0, welcomeShown).map((m, i) => (
+              <MessageBubble key={`welcome-${i}`} role={m.role} content={m.content} />
+            ))}
+            {welcomeShown < WELCOME_MESSAGES.length && <LoadingDots />}
+          </>
         ) : (
           messages.map((m, i) => (
             <MessageBubble key={i} role={m.role} content={m.content} imageUrl={m.imageUrl} audioUrl={m.audioUrl} />
