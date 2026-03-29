@@ -205,7 +205,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
             {inflightTools.length > 0 && (
               <div className="flex flex-wrap gap-1 ml-1 -mt-1 mb-2">
                 {inflightTools.map((t, i) => (
-                  <span key={i} className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#b5ada5] animate-pulse">
+                  <span key={i} className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#8a837b] animate-pulse">
                     {t.replace("search_records", "Recherche Odoo").replace("create_record", "Création Odoo").replace("update_record", "MAJ Odoo").replace("get_record", "Lecture Odoo").replace("search_product_docs", "Docs produit").replace("search_common_issues", "Pannes connues").replace("set_mode", "Mode")}
                   </span>
                 ))}

@@ -204,7 +204,7 @@ export default function ApplianceDetail() {
             <InfoRow label="Fin de garantie" value={formatDate(appliance.warranty_date)} />
             <InfoRow label="Enregistré le" value={formatDate(appliance.create_date)} />
             {!appliance.model && !appliance.serial_no && !appliance.vendor && !appliance.cost && (
-              <p className="text-gray-300 text-xs italic py-1">Aucun détail renseigné</p>
+              <p className="text-gray-500 text-xs italic py-1">Aucun détail renseigné</p>
             )}
           </div>
         )}
@@ -247,8 +247,8 @@ export default function ApplianceDetail() {
                     <>
                       <Sparkline values={values} />
                       <div className="flex justify-between mt-1.5">
-                        <span className="text-gray-300 text-[10px]">24h</span>
-                        <span className="text-gray-300 text-[10px]">
+                        <span className="text-gray-500 text-[10px]">24h</span>
+                        <span className="text-gray-500 text-[10px]">
                           min {min.toFixed(1)} / max {max.toFixed(1)}
                         </span>
                       </div>

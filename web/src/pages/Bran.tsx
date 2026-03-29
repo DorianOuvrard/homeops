@@ -95,7 +95,7 @@ export default function Bran() {
         </button>
         <div className="text-center">
           <p className="text-[#c45d3e] font-semibold text-base">Scanner le réseau</p>
-          <p className="text-[#b5ada5] text-sm mt-1">Détecter et importer les appareils connectés</p>
+          <p className="text-[#8a837b] text-sm mt-1">Détecter et importer les appareils connectés</p>
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function Bran() {
         </div>
         <div className="text-center">
           <p className="text-[#c45d3e] font-semibold text-base">Bran scanne le réseau...</p>
-          <p className="text-[#b5ada5] text-sm mt-1">Détection et import automatique</p>
+          <p className="text-[#8a837b] text-sm mt-1">Détection et import automatique</p>
         </div>
       </div>
     );
@@ -127,7 +127,7 @@ export default function Bran() {
           <RadarIcon className="w-8 h-8 text-[#c45d5d]" />
         </div>
         <p className="text-[#5a524b] font-semibold text-base">Bran est hors ligne</p>
-        <p className="text-[#b5ada5] text-sm mt-1">
+        <p className="text-[#8a837b] text-sm mt-1">
           Impossible de se connecter à Jeedom.
           {status?.jeedom_url && (
             <span className="block text-xs mt-1 text-[#d4cdc5]">{status.jeedom_url}</span>
@@ -150,7 +150,7 @@ export default function Bran() {
           <RadarIcon className="w-8 h-8 text-[#d4cdc5]" />
         </div>
         <p className="text-[#5a524b] font-semibold text-base">Aucun appareil détecté</p>
-        <p className="text-[#b5ada5] text-sm mt-1">
+        <p className="text-[#8a837b] text-sm mt-1">
           Jeedom est connecté mais aucun équipement n'a été trouvé.
         </p>
         <button
@@ -221,7 +221,7 @@ export default function Bran() {
                     )}
                   </div>
                   {device.object_name && (
-                    <p className="text-[#b5ada5] text-xs mt-0.5">{device.object_name}</p>
+                    <p className="text-[#8a837b] text-xs mt-0.5">{device.object_name}</p>
                   )}
                   {device.linked_equipment_name && (
                     <p className="text-[#5a8a60] text-xs mt-0.5">
@@ -247,9 +247,9 @@ export default function Bran() {
                     >
                       <span className="text-[#3d3833] font-semibold text-sm">{cmd.value}</span>
                       {cmd.unite && (
-                        <span className="text-[#b5ada5] text-xs">{cmd.unite}</span>
+                        <span className="text-[#8a837b] text-xs">{cmd.unite}</span>
                       )}
-                      <span className="text-[#b5ada5] text-[10px] ml-1">{cmd.name}</span>
+                      <span className="text-[#8a837b] text-[10px] ml-1">{cmd.name}</span>
                     </div>
                   ))}
                 </div>
@@ -268,7 +268,7 @@ export default function Bran() {
         {phase === "done" && (
           <button
             onClick={runScan}
-            className="w-full flex items-center justify-center gap-2 py-3 text-sm text-[#b5ada5] hover:text-[#c45d3e] transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 text-sm text-[#8a837b] hover:text-[#c45d3e] transition-colors"
           >
             <RadarIcon className="w-4 h-4" />
             Rescanner

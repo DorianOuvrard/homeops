@@ -137,7 +137,7 @@ export default function MessageBubble({ role, content, imageUrl, audioUrl, tools
               return (
                 <span
                   key={i}
-                  className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#b5ada5]"
+                  className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ece7] text-[#8a837b]"
                 >
                   {label}{suffix}
                 </span>
