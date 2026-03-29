@@ -30,6 +30,7 @@ class ChatMessageRequest(BaseModel):
 class ChatMessageResponse(BaseModel):
     reply: str
     timestamp: str
+    audio_url: str | None = None
 
 
 class ChatHistoryItem(BaseModel):

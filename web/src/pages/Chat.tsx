@@ -4,8 +4,13 @@ import MessageBubble from "../components/MessageBubble";
 import LoadingDots from "../components/LoadingDots";
 import MicButton from "../components/MicButton";
 
+interface DisplayMessage extends ChatMessage {
+  imageUrl?: string;
+  audioUrl?: string;
+}
+
 export default function Chat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -26,13 +31,13 @@ export default function Chat() {
   }, [messages, loading]);
 
   const sendText = async (text: string) => {
-    const userMsg: ChatMessage = { role: "user", content: text };
+    const userMsg: DisplayMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
     try {
       const res = await api.chat.send(text);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined }]);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -45,16 +50,19 @@ export default function Chat() {
   };
 
   const sendPhoto = async (file: File) => {
-    const userMsg: ChatMessage = {
+    const imageUrl = URL.createObjectURL(file);
+    const caption = input || "Analyse cette photo.";
+    const userMsg: DisplayMessage = {
       role: "user",
-      content: `[photo] ${input || "Analyse cette photo."}`,
+      content: caption,
+      imageUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
     try {
-      const res = await api.chat.sendPhoto(input || "Analyse cette photo.", file);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      const res = await api.chat.sendPhoto(caption, file);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined }]);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";
       setMessages((prev) => [
@@ -110,7 +118,7 @@ export default function Chat() {
           </div>
         ) : (
           messages.map((m, i) => (
-            <MessageBubble key={i} role={m.role} content={m.content} />
+            <MessageBubble key={i} role={m.role} content={m.content} imageUrl={m.imageUrl} audioUrl={m.audioUrl} />
           ))
         )}
         {loading && <LoadingDots />}

@@ -59,6 +59,7 @@ export interface ChatMessage {
 export interface ChatResponse {
   reply: string;
   timestamp: string;
+  audio_url: string | null;
 }
 
 export interface Appliance {
