@@ -47,15 +47,19 @@ export default function Scan() {
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraActive(true);
     } catch {
       // Camera not available, fall back to file picker
       fileRef.current?.click();
     }
   }, []);
+
+  // Assign stream to video element after React renders it
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraActive]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -97,7 +101,7 @@ export default function Scan() {
     const imageUrl = URL.createObjectURL(file);
     const userMsg = {
       role: "user" as const,
-      content: "Identifie cet appareil.",
+      content: "",
       imageUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
@@ -312,7 +316,7 @@ export default function Scan() {
       </div>
 
       {/* Floating "Generate plan" button */}
-      {appliances.length > 0 && messages.length === 0 && (
+      {appliances.length > 0 && !loadingChat && (
         <div className="absolute bottom-2 left-3 right-3 z-20">
           <button
             onClick={() => {

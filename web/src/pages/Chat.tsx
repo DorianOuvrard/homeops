@@ -109,7 +109,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
 
   const sendPhoto = async (file: File) => {
     const imageUrl = URL.createObjectURL(file);
-    const caption = input || "Analyse cette photo.";
+    const caption = input.trim();
     const userMsg: DisplayMessage = {
       role: "user",
       content: caption,
@@ -119,7 +119,7 @@ export default function Chat({ visible = true }: { visible?: boolean }) {
     setInput("");
     setLoading(true);
     try {
-      const res = await api.chat.sendPhoto(caption, file);
+      const res = await api.chat.sendPhoto(caption || "Analyse cette photo.", file);
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply, audioUrl: res.audio_url ?? undefined }]);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Erreur.";

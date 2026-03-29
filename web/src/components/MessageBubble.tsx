@@ -12,14 +12,20 @@ function formatTime(): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+const DEFAULT_PHOTO_PROMPTS = ["analyse cette photo.", "identifie cet appareil.", "identifie et enregistre cet appareil."];
+
 function extractImage(content: string): { text: string; url: string | null } {
   const match = content.match(/^\[image:(\/api\/v1\/uploads\/[^\]]+)\]\s*/);
   if (match) {
-    return { text: content.slice(match[0].length).trim(), url: match[1] };
+    const text = content.slice(match[0].length).trim();
+    const filtered = DEFAULT_PHOTO_PROMPTS.includes(text.toLowerCase()) ? "" : text;
+    return { text: filtered, url: match[1] };
   }
   const photoMatch = content.match(/^\[photo\]\s*/i);
   if (photoMatch) {
-    return { text: content.slice(photoMatch[0].length).trim(), url: null };
+    const text = content.slice(photoMatch[0].length).trim();
+    const filtered = DEFAULT_PHOTO_PROMPTS.includes(text.toLowerCase()) ? "" : text;
+    return { text: filtered, url: null };
   }
   return { text: content, url: null };
 }
