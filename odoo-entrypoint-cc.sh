@@ -10,5 +10,4 @@ exec python3 /usr/local/bin/odoo_cc_start.py \
   --db-filter="^${POSTGRESQL_ADDON_DB}$" \
   -i base \
   --http-port="${PORT:-8069}" \
-  --proxy-mode \
-  --no-database-list
+  --proxy-mode
